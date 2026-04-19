@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISG Analytics Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  window.__firebaseModules = { initializeApp, getDatabase, ref, onValue, get };
+</script>
+
+<style>
+  :root {
+    --bg:       #05070D;
+    --surface:  #0B0F1A;
+    --border:   rgba(0,242,255,0.12);
+    --cyan:     #00F2FF;
+    --green:    #00FF94;
+    --red:      #FF4560;
+    --orange:   #FFA500;
+    --text:     #C8D6E5;
+    --muted:    #4A5568;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Grid scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,242,255,0.012) 2px, rgba(0,242,255,0.012) 4px
+    );
+    pointer-events: none; z-index: 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.4;
+  }
+  .card-accent { border-left: 2px solid var(--cyan); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-online  { background: rgba(0,255,148,0.1); color: var(--green); border: 1px solid rgba(0,255,148,0.3); }
+  .badge-offline { background: rgba(255,69,96,0.1);  color: var(--red);   border: 1px solid rgba(255,69,96,0.3); }
+  .badge-warn    { background: rgba(255,165,0,0.1);   color: var(--orange);border: 1px solid rgba(255,165,0,0.3); }
+
+  .stat-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; line-height: 1.1; }
+
+  .plus  { color: var(--green); }
+  .minus { color: var(--red); }
+  .cyan  { color: var(--cyan); }
+
+  .tab-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+    background: transparent; color: var(--muted);
+  }
+  .tab-btn.active { background: rgba(0,242,255,0.1); color: var(--cyan); border-color: var(--border); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .port-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .port-card:hover { box-shadow: 0 0 30px rgba(0,242,255,0.06); }
+  .port-card.danger { border-left-color: var(--red); }
+  .port-card.warn   { border-left-color: var(--orange); }
+
+  /* Pulse dot */
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(0,255,148,0.5);
+    animation: pulse 2s infinite;
+  }
+  .pulse-dot.offline { background: var(--muted); animation: none; }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0,255,148,0.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(0,255,148,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,255,148,0); }
+  }
+
+  /* Micro stat grid */
+  .micro-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .micro-stat .label { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .micro-stat .val   { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+  /* Risk bar */
+  .risk-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 4px; margin-top: 4px; }
+  .risk-bar      { height: 4px; border-radius: 4px; transition: width 0.5s; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 0 12px; }
+  td { font-size: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0,242,255,0.05); }
+  tr:last-child td { border-bottom: none; }
+  tfoot td { font-weight: 700; padding-top: 14px; border-top: 2px solid var(--border); font-size: 13px; }
+
+  /* Loader */
+  #loader {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+  }
+  .loader-ring {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--cyan);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .section-title {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+
+  input[type="date"] {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--cyan); padding: 5px 8px; border-radius: 6px;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    outline: none;
+  }
+  input[type="date"]:focus { border-color: var(--cyan); }
+
+  .btn {
+    padding: 6px 16px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; border: none;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .btn-primary { background: var(--cyan); color: #000; }
+  .btn-primary:hover { background: #00d4e0; }
+  .btn-ghost { background: rgba(0,242,255,0.08); color: var(--cyan); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: rgba(0,242,255,0.15); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOADER ============ -->
+<div id="loader">
+  <div class="loader-ring"></div>
+  <p class="mono" style="font-size:11px;color:var(--muted);">CONNECTING TO FIREBASE...</p>
+</div>
+
+<!-- ============ ERROR BOX ============ -->
+<div id="error-box" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:999;
+  background:#1a0a0a;border:1px solid var(--red);color:var(--red);padding:12px 24px;border-radius:8px;font-size:12px;font-family:'JetBrains Mono',monospace;">
+</div>
+
+<!-- ============ MAIN ============ -->
+<div id="app" style="display:none;" class="p-4 md:p-8 max-w-screen-2xl mx-auto space-y-6 relative z-10">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight" style="color:var(--cyan);">FISG ANALYTICS <span style="color:var(--muted);font-weight:300;">PRO</span></h1>
+      <p class="section-title mt-1">FIREBASE REALTIME · <span id="port-count">0</span> ACTIVE PORTS</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="pulse-dot" id="connection-dot"></div>
+      <span id="connection-text" class="section-title">LIVE</span>
+      <span id="last-refresh" class="mono" style="font-size:10px;color:var(--muted);">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="card card-accent p-5">
+      <p class="stat-label">Total Equity</p>
+      <p class="stat-value cyan mt-2" id="total-equity">0.00</p>
+    </div>
+    <div class="card card-accent p-5">
+      <p class="stat-label">Total Net Profit</p>
+      <p class="stat-value mt-2" id="total-profit">0.00</p>
+    </div>
+    <div class="card card-accent p-5">
+      <p class="stat-label">Total Deposits</p>
+      <p class="stat-value mt-2" style="color:var(--text)" id="total-deposit">0.00</p>
+    </div>
+    <div class="card card-accent p-5">
+      <p class="stat-label">Avg Max Drawdown</p>
+      <p class="stat-value mt-2" style="color:var(--orange)" id="avg-dd">0.00%</p>
+    </div>
+  </div>
+
+  <!-- Port Cards Grid -->
+  <div>
+    <p class="section-title mb-4">PORTFOLIO OVERVIEW</p>
+    <div id="port-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+  </div>
+
+  <!-- Performance Table -->
+  <div class="card p-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <p class="section-title">PERFORMANCE GRID</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <button class="tab-btn active" onclick="setPeriod('today')">Today</button>
+        <button class="tab-btn" onclick="setPeriod('week')">Week</button>
+        <button class="tab-btn" onclick="setPeriod('month')">Month</button>
+        <button class="tab-btn" onclick="setPeriod('year')">Year</button>
+        <input type="date" id="date-start">
+        <span style="color:var(--muted);font-size:11px;">→</span>
+        <input type="date" id="date-end">
+        <button class="btn btn-primary" onclick="calculateCustomProfit()">คำนวณ</button>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th class="text-left">Port ID</th>
+            <th class="text-right">Profit</th>
+            <th class="text-right">Growth %</th>
+            <th class="text-right">Win Rate</th>
+            <th class="text-right">Profit Factor</th>
+            <th class="text-right">Max DD</th>
+          </tr>
+        </thead>
+        <tbody id="period-table"></tbody>
+        <tfoot>
+          <tr>
+            <td style="color:var(--cyan);">GRAND TOTAL</td>
+            <td class="text-right mono" id="grand-profit">—</td>
+            <td class="text-right mono" id="grand-growth">—</td>
+            <td class="text-right" colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+// ──────────────────────────────────────────
+// CONFIG — แก้ตรงนี้
+// ──────────────────────────────────────────
+const FIREBASE_URL = "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+// ──────────────────────────────────────────
+// Firebase Init
+// ──────────────────────────────────────────
+const { initializeApp, getDatabase, ref, onValue, get } = window.__firebaseModules;
+
+const app = initializeApp({
+  databaseURL: FIREBASE_URL,
+  // ใส่แค่ databaseURL — dashboard อ่านอย่างเดียว ผ่าน Security Rules public token
+  apiKey:      "dashboard-readonly",
+  projectId:   "fisg-analytics",
+});
+const db = getDatabase(app);
+
+// ──────────────────────────────────────────
+// State
+// ──────────────────────────────────────────
+let globalPorts = {};
+let charts      = {};
+
+const fmt    = v => parseFloat(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const clrCls = v => parseFloat(v) >= 0 ? 'plus' : 'minus';
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 6000);
+}
+
+// ──────────────────────────────────────────
+// Firebase Listener — realtime
+// ──────────────────────────────────────────
+function initListeners() {
+  const portsRef = ref(db, 'ports');
+  onValue(portsRef, snapshot => {
+    const data = snapshot.val();
+    if (!data) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('port-grid').innerHTML =
+        '<p style="color:var(--muted);font-size:12px;">ยังไม่มีข้อมูล — รอให้ EA ส่งข้อมูลมาครับ</p>';
+      return;
+    }
+    globalPorts = data;
+    renderDashboard(data);
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
+  }, err => {
+    document.getElementById('loader').style.display = 'none';
+    showError('Firebase error: ' + err.message);
+  });
+}
+
+// ──────────────────────────────────────────
+// Render Dashboard
+// ──────────────────────────────────────────
+function renderDashboard(ports) {
+  let totalEquity = 0, totalDeposit = 0, totalProfit = 0, ddSum = 0, portCount = 0;
+
+  const portArray = Object.entries(ports).map(([id, data]) => {
+    const s = data.status || {};
+    const b = parseFloat(s.balance  || 0);
+    const e = parseFloat(s.equity   || 0);
+    const d = parseFloat(s.net_deposit || 0);
+    const dd= parseFloat(s.max_drawdown || s.drawdown || 0);
+
+    totalEquity  += e;
+    totalDeposit += d;
+    totalProfit  += (b - d);
+    ddSum        += dd;
+    portCount++;
+
+    // Build history array from daily_history object
+    const dailyRaw = data.daily_history || {};
+    const history  = Object.entries(dailyRaw)
+      .map(([ts, p]) => ({ d: parseInt(ts) * 1000, p: parseFloat(p) }))
+      .sort((a, b) => a.d - b.d);
+
+    // Trade log for stats
+    const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
+    const stats    = calcStats(tradeLog);
+
+    // Last update age
+    const lastUpdate = s.last_update ? parseInt(s.last_update) * 1000 : 0;
+    const ageMin     = lastUpdate ? (Date.now() - lastUpdate) / 60000 : 999;
+    const isOnline   = ageMin < 15;
+
+    return { id, balance: b, equity: e, deposit: d, dd, max_dd: dd,
+             wins: s.wins || 0, losses: s.losses || 0,
+             open_trades: s.open_trades || [],
+             broker: s.broker || '', currency: s.currency || 'USD',
+             history, stats, isOnline, ageMin };
+  });
+
+  // Summaries
+  document.getElementById('total-equity').textContent  = fmt(totalEquity);
+  document.getElementById('total-deposit').textContent = fmt(totalDeposit);
+  document.getElementById('port-count').textContent    = portCount;
+
+  const tp = document.getElementById('total-profit');
+  tp.textContent  = fmt(totalProfit);
+  tp.className    = 'stat-value mt-2 ' + clrCls(totalProfit);
+
+  const avgDD = portCount ? ddSum / portCount : 0;
+  document.getElementById('avg-dd').textContent = avgDD.toFixed(2) + '%';
+  document.getElementById('avg-dd').style.color =
+    avgDD > 20 ? 'var(--red)' : avgDD > 10 ? 'var(--orange)' : 'var(--green)';
+
+  // Port cards
+  const grid = document.getElementById('port-grid');
+  grid.innerHTML = '';
+
+  portArray.forEach(p => {
+    const totalP  = p.balance - p.deposit;
+    const growth  = p.deposit > 0 ? (totalP / p.deposit * 100) : 0;
+    const ddClass = p.dd > 20 ? 'danger' : p.dd > 10 ? 'warn' : '';
+    const openCount = Array.isArray(p.open_trades) ? p.open_trades.length : 0;
+    const openProfit = Array.isArray(p.open_trades)
+      ? p.open_trades.reduce((s, t) => s + parseFloat(t.profit || 0), 0) : 0;
+
+    const card = document.createElement('div');
+    card.className = `port-card ${ddClass} fade-in`;
+    card.id = 'card-' + p.id.replace(/\W/g, '');
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div class="pulse-dot ${p.isOnline ? '' : 'offline'}"></div>
+            <span style="font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.05em;">${p.id}</span>
+          </div>
+          <span style="font-size:10px;color:var(--muted);">${p.broker || '—'} · ${p.currency}</span>
+        </div>
+        <div style="text-align:right;">
+          <div class="badge ${p.isOnline ? 'badge-online' : 'badge-offline'}">
+            ${p.isOnline ? '● ONLINE' : '○ OFFLINE'}
+          </div>
+          <p style="font-size:9px;color:var(--muted);margin-top:4px;">${p.isOnline ? Math.round(p.ageMin) + 'm ago' : 'last seen ' + Math.round(p.ageMin) + 'm ago'}</p>
+        </div>
+      </div>
+
+      <!-- Equity Chart -->
+      <div id="chart-${p.id.replace(/\W/g,'')}" style="height:100px;margin-bottom:12px;"></div>
+
+      <!-- Main stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <p class="stat-label">Balance</p>
+          <p class="mono" style="font-size:16px;font-weight:700;color:var(--text);margin-top:2px;">${fmt(p.balance)}</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="stat-label">Equity</p>
+          <p class="mono" style="font-size:16px;font-weight:700;color:var(--cyan);margin-top:2px;">${fmt(p.equity)}</p>
+        </div>
+        <div>
+          <p class="stat-label">Net Profit</p>
+          <p class="mono ${clrCls(totalP)}" style="font-size:14px;font-weight:700;margin-top:2px;">${fmt(totalP)}</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="stat-label">Growth</p>
+          <p class="mono ${clrCls(growth)}" style="font-size:14px;font-weight:700;margin-top:2px;">${growth.toFixed(2)}%</p>
+        </div>
+      </div>
+
+      <!-- Drawdown bar -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span class="stat-label">Max Drawdown</span>
+          <span class="mono" style="font-size:10px;color:${p.dd>20?'var(--red)':p.dd>10?'var(--orange)':'var(--green)'};">${p.dd.toFixed(2)}%</span>
+        </div>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar" style="width:${Math.min(p.dd,100)}%;background:${p.dd>20?'var(--red)':p.dd>10?'var(--orange)':'var(--green)'};"></div>
+        </div>
+      </div>
+
+      <!-- Micro stats -->
+      <div class="micro-grid">
+        <div class="micro-stat">
+          <div class="label">Win Rate</div>
+          <div class="val ${clrCls(p.stats.winRate - 50)}">${p.stats.winRate}%</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Profit Factor</div>
+          <div class="val" style="color:var(--cyan);">${p.stats.profitFactor}</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Expectancy</div>
+          <div class="val ${clrCls(p.stats.expectancy)}">${fmt(p.stats.expectancy)}</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Wins / Losses</div>
+          <div class="val"><span class="plus">${p.wins}</span> / <span class="minus">${p.losses}</span></div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Open Trades</div>
+          <div class="val" style="color:var(--cyan);">${openCount}</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Float P/L</div>
+          <div class="val ${clrCls(openProfit)}">${fmt(openProfit)}</div>
+        </div>
+      </div>
+
+      <!-- Open trades detail -->
+      ${openCount > 0 ? `
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <p class="stat-label" style="margin-bottom:6px;">OPEN POSITIONS</p>
+        ${(Array.isArray(p.open_trades) ? p.open_trades : []).map(t => `
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px;">
+            <span style="color:${t.type==='BUY'?'var(--green)':'var(--red)'};">${t.type}</span>
+            <span class="mono" style="color:var(--text);">${t.sym}</span>
+            <span class="mono" style="color:var(--muted);">${t.lots}L</span>
+            <span class="mono ${clrCls(t.profit)}">${fmt(t.profit)}</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <!-- Share button -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;font-size:10px;" onclick="copyPublicLink('${p.id}')">
+          🔗 Copy Public Link
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    // Draw chart after DOM insert
+    setTimeout(() => drawEquityChart(p), 50);
+  });
+
+  // Update performance table
+  if(!document.getElementById('date-start').value) setPeriod('month');
+  else calculateCustomProfit();
+}
+
+// ──────────────────────────────────────────
+// Chart
+// ──────────────────────────────────────────
+function drawEquityChart(p) {
+  const containerId = 'chart-' + p.id.replace(/\W/g, '');
+  const container   = document.getElementById(containerId);
+  if (!container || !p.history.length) {
+    if(container) container.innerHTML =
+      '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;">ข้อมูลไม่เพียงพอ</div>';
+    return;
+  }
+
+  // Destroy old chart
+  if (charts[p.id]) { try { charts[p.id].destroy(); } catch(e){} }
+
+  let cum = 0;
+  const series = p.history.map(h => {
+    cum += h.p;
+    return { x: h.d, y: p.deposit > 0 ? parseFloat((cum / p.deposit * 100).toFixed(2)) : 0 };
+  });
+
+  const isPositive = series[series.length - 1]?.y >= 0;
+  const color      = isPositive ? '#00FF94' : '#FF4560';
+
+  charts[p.id] = new ApexCharts(container, {
+    chart: {
+      type: 'area', height: '100%',
+      toolbar: { show: false }, sparkline: { enabled: false },
+      animations: { enabled: true, speed: 400 },
+      background: 'transparent',
+    },
+    grid: { show: false, padding: { top: 5, right: 0, bottom: -15, left: -10 } },
+    stroke: { curve: 'smooth', width: 2, colors: [color] },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.4, opacityTo: 0.0,
+        stops: [0, 100],
+        colorStops: [{ offset: 0, color, opacity: 0.4 }, { offset: 100, color, opacity: 0 }]
+      }
+    },
+    series: [{ name: 'Growth %', data: series }],
+    xaxis: { type: 'datetime', labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { show: false },
+    tooltip: {
+      theme: 'dark',
+      x: { format: 'dd MMM yyyy' },
+      y: { formatter: v => v + '%' },
+      style: { fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }
+    },
+  });
+  charts[p.id].render();
+}
+
+// ──────────────────────────────────────────
+// Stats Calculator
+// ──────────────────────────────────────────
+function calcStats(tradeLog) {
+  const profits = tradeLog.map(t => parseFloat(t.profit || 0)).filter(p => p !== 0);
+  if (!profits.length) return { winRate: 0, profitFactor: '—', expectancy: 0 };
+
+  const wins   = profits.filter(p => p > 0);
+  const losses = profits.filter(p => p < 0);
+  const sumW   = wins.reduce((a, b) => a + b, 0);
+  const sumL   = Math.abs(losses.reduce((a, b) => a + b, 0));
+
+  return {
+    winRate     : (wins.length / profits.length * 100).toFixed(1),
+    profitFactor: sumL > 0 ? (sumW / sumL).toFixed(2) : '∞',
+    expectancy  : (profits.reduce((a, b) => a + b, 0) / profits.length).toFixed(2),
+  };
+}
+
+// ──────────────────────────────────────────
+// Period Filter
+// ──────────────────────────────────────────
+window.setPeriod = function(p) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const now = new Date(); let start = new Date(now);
+  if (p === 'today') start.setHours(0, 0, 0, 0);
+  if (p === 'week')  start.setDate(now.getDate() - now.getDay());
+  if (p === 'month') start.setDate(1);
+  if (p === 'year')  start = new Date(now.getFullYear(), 0, 1);
+  document.getElementById('date-start').valueAsDate = start;
+  document.getElementById('date-end').valueAsDate   = now;
+  calculateCustomProfit();
+};
+
+window.calculateCustomProfit = function() {
+  if (!globalPorts || !Object.keys(globalPorts).length) return;
+
+  const startVal = document.getElementById('date-start').value;
+  const endVal   = document.getElementById('date-end').value;
+  if (!startVal || !endVal) return;
+
+  // parse local date ถูกต้อง ไม่ shift timezone
+  const [sy, sm, sd] = startVal.split('-').map(Number);
+  const [ey, em, ed] = endVal.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0).getTime();
+  const end   = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+
+  let grandP = 0, totalDep = 0;
+  let rows = '';
+
+  Object.entries(globalPorts).forEach(([id, data]) => {
+    const s       = data.status || {};
+    const deposit = parseFloat(s.net_deposit || 0);
+    const daily   = data.daily_history || {};
+
+    const pProfit = Object.entries(daily)
+      .filter(([ts]) => {
+        const d = parseInt(ts) * 1000;
+        return d >= start && d <= end;
+      })
+      .reduce((sum, [, p]) => sum + parseFloat(p), 0);
+
+    const growth = deposit > 0 ? (pProfit / deposit * 100) : 0;
+    const dd     = parseFloat(s.max_drawdown || s.drawdown || 0);
+    const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
+    const st = calcStats(tradeLog);
+
+    grandP   += pProfit;
+    totalDep += deposit;
+
+    rows += `<tr>
+      <td class="mono" style="font-size:11px;color:var(--text);font-weight:600;">${id}</td>
+      <td class="mono text-right ${clrCls(pProfit)}">${fmt(pProfit)}</td>
+      <td class="mono text-right ${clrCls(growth)}">${growth.toFixed(2)}%</td>
+      <td class="mono text-right" style="color:var(--cyan);">${st.winRate}%</td>
+      <td class="mono text-right" style="color:var(--cyan);">${st.profitFactor}</td>
+      <td class="mono text-right" style="color:${dd>20?'var(--red)':dd>10?'var(--orange)':'var(--green)'};">${dd.toFixed(2)}%</td>
+    </tr>`;
+  });
+
+  document.getElementById('period-table').innerHTML = rows;
+
+  const gp = document.getElementById('grand-profit');
+  gp.textContent = fmt(grandP);
+  gp.className   = 'text-right mono ' + clrCls(grandP);
+
+  const gg = document.getElementById('grand-growth');
+  const tg = totalDep > 0 ? (grandP / totalDep * 100) : 0;
+  gg.textContent = tg.toFixed(2) + '%';
+  gg.className   = 'text-right mono ' + clrCls(tg);
+};
+
+// ──────────────────────────────────────────
+// Public Link
+// ──────────────────────────────────────────
+window.copyPublicLink = function(portId) {
+  const url = location.origin + location.pathname.replace('index.html', 'public.html')
+            + '?port=' + encodeURIComponent(portId);
+  navigator.clipboard.writeText(url).then(() => {
+    showError('✓ คัดลอก public link แล้วครับ: ' + portId);
+    document.getElementById('error-box').style.background = '#0a1a0a';
+    document.getElementById('error-box').style.color = 'var(--green)';
+    document.getElementById('error-box').style.borderColor = 'var(--green)';
+  });
+};
+
+// ──────────────────────────────────────────
+// Start
+// ──────────────────────────────────────────
+initListeners();
+</script>
+</body>
+</html>

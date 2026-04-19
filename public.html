@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISG · Portfolio Report</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  window.__fb = { initializeApp, getDatabase, ref, onValue };
+</script>
+
+<style>
+  :root {
+    --bg:      #04060C;
+    --s1:      #090D18;
+    --s2:      #0D1220;
+    --cyan:    #00F2FF;
+    --green:   #00FF94;
+    --red:     #FF4560;
+    --gold:    #FFD700;
+    --orange:  #FF9500;
+    --text:    #C8D6E5;
+    --muted:   #3D4F63;
+    --border:  rgba(0,242,255,0.1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Animated bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,242,255,0.06) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,242,255,0.008) 40px, rgba(0,242,255,0.008) 41px);
+    pointer-events: none; z-index: 0;
+  }
+
+  .card {
+    background: var(--s1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glow-top::before {
+    content: '';
+    position: absolute; top: 0; left: 20%; right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  }
+
+  .stat-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .stat-big   { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+  .stat-med   { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; }
+  .stat-sm    { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+
+  .plus   { color: var(--green); }
+  .minus  { color: var(--red); }
+  .accent { color: var(--cyan); }
+  .gold   { color: var(--gold); }
+
+  /* Pill */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 12px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .pill-live   { background: rgba(0,255,148,0.12); color: var(--green); border: 1px solid rgba(0,255,148,0.25); }
+  .pill-closed { background: rgba(100,100,100,0.12); color: var(--muted); border: 1px solid rgba(100,100,100,0.2); }
+
+  /* Watermark */
+  .watermark {
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(0,242,255,0.2); font-weight: 600;
+  }
+
+  /* Progress ring */
+  .ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-val { position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
+
+  /* Month table */
+  .month-row { display: grid; grid-template-columns: 80px 1fr 80px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .month-row:last-child { border-bottom: none; }
+  .month-bar-wrap { background: rgba(255,255,255,0.04); border-radius: 4px; height: 5px; }
+  .month-bar { height: 5px; border-radius: 4px; }
+
+  /* Loader */
+  #loader { position: fixed; inset: 0; z-index: 999; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .ring { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border);
+    border-top-color: var(--cyan); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+  .fade-up { animation: fadeUp 0.5s ease forwards; }
+  .fade-up-2 { animation: fadeUp 0.5s 0.1s ease both; }
+  .fade-up-3 { animation: fadeUp 0.5s 0.2s ease both; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="ring"></div>
+  <p class="mono" style="font-size:10px;color:var(--muted);">LOADING PORTFOLIO...</p>
+</div>
+
+<div id="app" style="display:none;" class="relative z-10 p-4 md:p-8 max-w-4xl mx-auto space-y-6 pb-16">
+
+  <!-- Header -->
+  <div class="fade-up" style="text-align:center;padding:32px 0 16px;">
+    <p class="watermark">FISG Analytics · Verified Portfolio</p>
+    <h1 id="port-title" class="mono" style="font-size:24px;font-weight:700;color:var(--cyan);margin:8px 0;">—</h1>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:8px;">
+      <div id="status-pill" class="pill pill-live">● LIVE</div>
+      <span id="broker-info" class="mono" style="font-size:10px;color:var(--muted);">—</span>
+    </div>
+    <p style="font-size:10px;color:var(--muted);margin-top:8px;" class="mono">
+      Last update: <span id="last-update">—</span>
+    </p>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 fade-up-2">
+    <div class="card glow-top p-5" style="text-align:center;">
+      <p class="stat-label">Growth</p>
+      <p class="stat-big accent mt-2" id="growth-val">—</p>
+    </div>
+    <div class="card glow-top p-5" style="text-align:center;">
+      <p class="stat-label">Max Drawdown</p>
+      <p class="stat-big mt-2" id="dd-val" style="color:var(--orange);">—</p>
+    </div>
+    <div class="card glow-top p-5" style="text-align:center;">
+      <p class="stat-label">Win Rate</p>
+      <p class="stat-big mt-2" id="wr-val" style="color:var(--green);">—</p>
+    </div>
+    <div class="card glow-top p-5" style="text-align:center;">
+      <p class="stat-label">Profit Factor</p>
+      <p class="stat-big mt-2 gold" id="pf-val">—</p>
+    </div>
+  </div>
+
+  <!-- Equity Curve -->
+  <div class="card glow-top p-6 fade-up-3">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <p class="stat-label">EQUITY CURVE</p>
+      <p class="mono" style="font-size:10px;color:var(--muted);">% Growth from Deposits</p>
+    </div>
+    <div id="equity-chart" style="height:220px;"></div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 fade-up-3">
+    <div class="card p-5">
+      <p class="stat-label mb-3">TRADE SUMMARY</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Total Trades</span>
+          <span class="mono stat-sm accent" id="total-trades">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Wins</span>
+          <span class="mono stat-sm plus" id="wins-val">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Losses</span>
+          <span class="mono stat-sm minus" id="losses-val">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Avg Win</span>
+          <span class="mono stat-sm plus" id="avg-win">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Avg Loss</span>
+          <span class="mono stat-sm minus" id="avg-loss">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <p class="stat-label mb-3">RISK METRICS</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Expectancy</span>
+          <span class="mono stat-sm" id="exp-val" style="color:var(--cyan);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Current DD</span>
+          <span class="mono stat-sm" id="cur-dd" style="color:var(--orange);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Deposit</span>
+          <span class="mono stat-sm" id="dep-val" style="color:var(--muted);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--muted);">Total Profit</span>
+          <span class="mono stat-sm" id="profit-val">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Win Rate Ring -->
+    <div class="card p-5" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+      <p class="stat-label">WIN RATE VISUAL</p>
+      <div class="ring-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,242,255,0.08)" stroke-width="8"/>
+          <circle id="ring-arc" cx="50" cy="50" r="40" fill="none"
+            stroke="var(--green)" stroke-width="8"
+            stroke-dasharray="251.2" stroke-dashoffset="251.2"
+            stroke-linecap="round"
+            style="transition: stroke-dashoffset 1s ease;"/>
+        </svg>
+        <span class="ring-val plus" id="ring-label">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Breakdown -->
+  <div class="card p-6 fade-up-3">
+    <p class="stat-label mb-4">MONTHLY BREAKDOWN</p>
+    <div id="monthly-breakdown"></div>
+  </div>
+
+  <!-- Open Trades (ถ้ามี) -->
+  <div class="card p-6 fade-up-3" id="open-section" style="display:none;">
+    <p class="stat-label mb-4">OPEN POSITIONS</p>
+    <div id="open-trades-list"></div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;padding-top:16px;">
+    <p class="watermark">Generated by FISG Analytics Pro · Data is live & verified</p>
+    <p style="font-size:9px;color:var(--muted);margin-top:4px;">Past performance does not guarantee future results.</p>
+  </div>
+
+</div>
+
+<script type="module">
+const FIREBASE_URL = "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+const { initializeApp, getDatabase, ref, onValue } = window.__fb;
+const app = initializeApp({ databaseURL: FIREBASE_URL, apiKey: "pub-readonly", projectId: "fisg-analytics" });
+const db  = getDatabase(app);
+
+const fmt    = v => parseFloat(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const clrCls = v => parseFloat(v) >= 0 ? 'plus' : 'minus';
+const el     = id => document.getElementById(id);
+
+// Get port from URL
+const params = new URLSearchParams(location.search);
+const portId = params.get('port');
+if (!portId) {
+  document.getElementById('loader').innerHTML =
+    '<p style="color:var(--red);font-family:monospace;">❌ ไม่พบ Port ID ใน URL<br><small>ตัวอย่าง: public.html?port=AURA_12345</small></p>';
+}
+
+// Listen realtime
+const portRef = ref(db, 'ports/' + portId);
+onValue(portRef, snap => {
+  const data = snap.val();
+  if (!data) {
+    document.getElementById('loader').innerHTML =
+      '<p style="color:var(--red);font-family:monospace;text-align:center;">❌ ไม่พบข้อมูลพอร์ตนี้</p>';
+    return;
+  }
+  renderPublic(portId, data);
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('app').style.display    = 'block';
+});
+
+function renderPublic(id, data) {
+  const s = data.status || {};
+  const balance  = parseFloat(s.balance      || 0);
+  const equity   = parseFloat(s.equity       || 0);
+  const deposit  = parseFloat(s.net_deposit  || 0);
+  const maxDD    = parseFloat(s.max_drawdown || s.drawdown || 0);
+  const curDD    = parseFloat(s.drawdown     || 0);
+  const wins     = parseInt(s.wins    || 0);
+  const losses   = parseInt(s.losses  || 0);
+  const broker   = s.broker   || '—';
+  const currency = s.currency || 'USD';
+  const lastUp   = s.last_update ? new Date(parseInt(s.last_update) * 1000) : null;
+  const ageMin   = lastUp ? (Date.now() - lastUp.getTime()) / 60000 : 999;
+
+  // Header
+  el('port-title').textContent   = id;
+  el('broker-info').textContent  = broker + ' · ' + currency;
+  el('last-update').textContent  = lastUp ? lastUp.toLocaleString() : '—';
+  el('status-pill').className    = 'pill ' + (ageMin < 15 ? 'pill-live' : 'pill-closed');
+  el('status-pill').textContent  = ageMin < 15 ? '● LIVE' : '○ OFFLINE';
+
+  // Growth — แสดง % ไม่แสดง balance จริง
+  const totalProfit = balance - deposit;
+  const growth = deposit > 0 ? (totalProfit / deposit * 100) : 0;
+  el('growth-val').textContent = (growth >= 0 ? '+' : '') + growth.toFixed(2) + '%';
+  el('growth-val').className   = 'stat-big mt-2 ' + clrCls(growth);
+
+  el('dd-val').textContent  = maxDD.toFixed(2) + '%';
+  el('dd-val').style.color  = maxDD > 20 ? 'var(--red)' : 'var(--orange)';
+
+  // Trade stats
+  const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
+  const profits  = tradeLog.map(t => parseFloat(t.profit || 0)).filter(p => p !== 0);
+  const winsArr  = profits.filter(p => p > 0);
+  const lossArr  = profits.filter(p => p < 0);
+  const sumW     = winsArr.reduce((a, b) => a + b, 0);
+  const sumL     = Math.abs(lossArr.reduce((a, b) => a + b, 0));
+  const wr       = profits.length ? winsArr.length / profits.length * 100 : 0;
+  const pf       = sumL > 0 ? sumW / sumL : 0;
+  const exp      = profits.length ? profits.reduce((a, b) => a + b, 0) / profits.length : 0;
+  const avgW     = winsArr.length ? sumW / winsArr.length : 0;
+  const avgL     = lossArr.length ? sumL / lossArr.length : 0;
+
+  el('wr-val').textContent = wr.toFixed(1) + '%';
+  el('pf-val').textContent = pf > 0 ? pf.toFixed(2) : '—';
+
+  el('total-trades').textContent = profits.length;
+  el('wins-val').textContent     = wins;
+  el('losses-val').textContent   = losses;
+  el('avg-win').textContent      = '+' + fmt(avgW);
+  el('avg-loss').textContent     = '-' + fmt(avgL);
+
+  el('exp-val').textContent    = (exp >= 0 ? '+' : '') + fmt(exp);
+  el('exp-val').className      = 'mono stat-sm ' + clrCls(exp);
+  el('cur-dd').textContent     = curDD.toFixed(2) + '%';
+  el('dep-val').textContent    = fmt(deposit);    // แสดง deposit แต่ไม่แสดง balance จริง
+  el('profit-val').textContent = (totalProfit >= 0 ? '+' : '') + fmt(totalProfit);
+  el('profit-val').className   = 'mono stat-sm ' + clrCls(totalProfit);
+
+  // Win rate ring
+  const offset = 251.2 - (wr / 100 * 251.2);
+  el('ring-arc').style.strokeDashoffset = offset;
+  el('ring-arc').style.stroke = wr >= 50 ? 'var(--green)' : 'var(--red)';
+  el('ring-label').textContent = wr.toFixed(1) + '%';
+  el('ring-label').className   = 'ring-val ' + (wr >= 50 ? 'plus' : 'minus');
+
+  // History
+  const dailyRaw = data.daily_history || {};
+  const history  = Object.entries(dailyRaw)
+    .map(([ts, p]) => ({ d: parseInt(ts) * 1000, p: parseFloat(p) }))
+    .sort((a, b) => a.d - b.d);
+
+  // Equity curve
+  drawEquityCurve(history, deposit);
+
+  // Monthly breakdown
+  renderMonthly(history);
+
+  // Open trades
+  const openTrades = Array.isArray(s.open_trades) ? s.open_trades : [];
+  if (openTrades.length > 0) {
+    el('open-section').style.display = 'block';
+    el('open-trades-list').innerHTML = openTrades.map(t => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;">
+        <span class="mono" style="color:${t.type==='BUY'?'var(--green)':'var(--red)'};">${t.type}</span>
+        <span class="mono" style="color:var(--text);font-weight:600;">${t.sym}</span>
+        <span class="mono" style="color:var(--muted);">${t.lots} lot</span>
+        <span class="mono ${clrCls(t.profit)}">${t.profit >= 0 ? '+' : ''}${fmt(t.profit)}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function drawEquityCurve(history, deposit) {
+  if (!history.length) return;
+  let cum = 0;
+  const series = history.map(h => {
+    cum += h.p;
+    return { x: h.d, y: deposit > 0 ? parseFloat((cum / deposit * 100).toFixed(2)) : 0 };
+  });
+  const isPositive = series[series.length - 1]?.y >= 0;
+  const color = isPositive ? '#00FF94' : '#FF4560';
+
+  new ApexCharts(el('equity-chart'), {
+    chart: { type: 'area', height: '100%', toolbar: { show: false }, background: 'transparent',
+             animations: { enabled: true, speed: 600 } },
+    grid: { borderColor: 'rgba(0,242,255,0.06)', strokeDashArray: 4,
+            padding: { top: 0, right: 10, bottom: 0, left: 10 } },
+    stroke: { curve: 'smooth', width: 2.5, colors: [color] },
+    fill: {
+      type: 'gradient',
+      gradient: { opacityFrom: 0.35, opacityTo: 0,
+                  colorStops: [{ offset: 0, color, opacity: 0.35 }, { offset: 100, color, opacity: 0 }] }
+    },
+    series: [{ name: 'Growth %', data: series }],
+    xaxis: { type: 'datetime', labels: { style: { colors: '#3D4F63', fontFamily: 'JetBrains Mono', fontSize: '10px' } },
+             axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { colors: '#3D4F63', fontFamily: 'JetBrains Mono', fontSize: '10px' },
+                       formatter: v => v.toFixed(1) + '%' } },
+    tooltip: { theme: 'dark', x: { format: 'dd MMM yyyy' }, y: { formatter: v => v + '%' },
+               style: { fontFamily: 'JetBrains Mono', fontSize: '11px' } },
+    markers: { size: 0 },
+  }).render();
+}
+
+function renderMonthly(history) {
+  // Group by month
+  const monthly = {};
+  history.forEach(h => {
+    const dt  = new Date(h.d);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+    monthly[key] = (monthly[key] || 0) + h.p;
+  });
+
+  const entries = Object.entries(monthly).sort().slice(-12); // แค่ 12 เดือนล่าสุด
+  const maxAbs  = Math.max(...entries.map(([, v]) => Math.abs(v)), 1);
+
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  el('monthly-breakdown').innerHTML = entries.map(([key, p]) => {
+    const [y, m] = key.split('-');
+    const label  = monthNames[parseInt(m) - 1] + ' ' + y.slice(2);
+    const pct    = (Math.abs(p) / maxAbs * 100).toFixed(1);
+    const color  = p >= 0 ? 'var(--green)' : 'var(--red)';
+    return `
+      <div class="month-row">
+        <span class="mono" style="font-size:10px;color:var(--muted);">${label}</span>
+        <div class="month-bar-wrap">
+          <div class="month-bar" style="width:${pct}%;background:${color};${p<0?'margin-left:auto;':''}"></div>
+        </div>
+        <span class="mono text-right ${clrCls(p)}" style="font-size:11px;">${p>=0?'+':''}${fmt(p)}</span>
+      </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
