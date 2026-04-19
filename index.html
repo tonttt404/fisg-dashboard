@@ -608,7 +608,6 @@ function toLocalDateStr(d) {
   const dd = String(d.getDate()).padStart(2,'0');
   return y+'-'+m+'-'+dd;
 }
-
 window.setPeriod = function(p) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   if (typeof event !== 'undefined' && event && event.target) event.target.classList.add('active');
