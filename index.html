@@ -610,7 +610,7 @@ function toLocalDateStr(d) {
 }
 window.setPeriod = function(p) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (typeof event !== 'undefined' && event && event.target) event.target.classList.add('active');
+  if (typeof event !== 'undefined' && event && event.target) try { if(event && event.target) event.target.classList.add('active'); } catch(e) {};
   const now = new Date(); let start = new Date(now);
   if (p === 'today') start.setHours(0, 0, 0, 0);
   if (p === 'week')  start.setDate(now.getDate() - now.getDay());
