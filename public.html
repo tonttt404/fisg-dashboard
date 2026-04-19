@@ -253,7 +253,15 @@
 const FIREBASE_URL = "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 const { initializeApp, getDatabase, ref, onValue } = window.__fb;
-const app = initializeApp({ databaseURL: FIREBASE_URL, apiKey: "pub-readonly", projectId: "fisg-analytics" });
+const app = initializeApp({
+  apiKey:            "AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
+  authDomain:        "fisg-analytics.firebaseapp.com",
+  databaseURL:       FIREBASE_URL,
+  projectId:         "fisg-analytics",
+  storageBucket:     "fisg-analytics.firebasestorage.app",
+  messagingSenderId: "78360571677",
+  appId:             "1:78360571677:web:04797d955a553df1b3fbf4"
+});
 const db  = getDatabase(app);
 
 const fmt    = v => parseFloat(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });

@@ -287,18 +287,19 @@
 // ──────────────────────────────────────────
 // CONFIG — แก้ตรงนี้
 // ──────────────────────────────────────────
-const FIREBASE_URL = "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app";
-
 // ──────────────────────────────────────────
 // Firebase Init
 // ──────────────────────────────────────────
 const { initializeApp, getDatabase, ref, onValue, get } = window.__firebaseModules;
 
 const app = initializeApp({
-  databaseURL: FIREBASE_URL,
-  // ใส่แค่ databaseURL — dashboard อ่านอย่างเดียว ผ่าน Security Rules public token
-  apiKey:      "dashboard-readonly",
-  projectId:   "fisg-analytics",
+  apiKey:            "AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
+  authDomain:        "fisg-analytics.firebaseapp.com",
+  databaseURL:       "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "fisg-analytics",
+  storageBucket:     "fisg-analytics.firebasestorage.app",
+  messagingSenderId: "78360571677",
+  appId:             "1:78360571677:web:04797d955a553df1b3fbf4"
 });
 const db = getDatabase(app);
 
