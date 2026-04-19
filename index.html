@@ -522,7 +522,7 @@ function renderDashboard(ports) {
 
   // Update performance table
   if(!document.getElementById('date-start').value) setPeriod('month');
-  else calculateCustomProfit();
+  calculateCustomProfit();
 }
 
 // ──────────────────────────────────────────
@@ -602,16 +602,23 @@ function calcStats(tradeLog) {
 // ──────────────────────────────────────────
 // Period Filter
 // ──────────────────────────────────────────
+function toLocalDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+
 window.setPeriod = function(p) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  if (typeof event !== 'undefined' && event && event.target) event.target.classList.add('active');
   const now = new Date(); let start = new Date(now);
   if (p === 'today') start.setHours(0, 0, 0, 0);
   if (p === 'week')  start.setDate(now.getDate() - now.getDay());
   if (p === 'month') start.setDate(1);
   if (p === 'year')  start = new Date(now.getFullYear(), 0, 1);
-  document.getElementById('date-start').valueAsDate = start;
-  document.getElementById('date-end').valueAsDate   = now;
+  document.getElementById('date-start').value = toLocalDateStr(start);
+  document.getElementById('date-end').value   = toLocalDateStr(now);
   calculateCustomProfit();
 };
 
