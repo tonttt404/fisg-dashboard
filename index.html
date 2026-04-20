@@ -1,609 +1,702 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FISG · Quant Command Center</title>
+<title>FISG Analytics Pro</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  const cfg = {
-    apiKey:"AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
-    authDomain:"fisg-analytics.firebaseapp.com",
-    databaseURL:"https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId:"fisg-analytics",
-    storageBucket:"fisg-analytics.firebasestorage.app",
-    messagingSenderId:"78360571677",
-    appId:"1:78360571677:web:04797d955a553df1b3fbf4"
-  };
-  const app=initializeApp(cfg);
-  const db=getDatabase(app);
-  window.__db=db; window.__ref=ref; window.__set=set; window.__onValue=onValue;
-  document.dispatchEvent(new Event('fb-ready'));
+  import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  window.__firebaseModules = { initializeApp, getDatabase, ref, onValue, get };
 </script>
+
 <style>
-:root{
-  --bg0:#02040A;--bg1:#070910;--bg2:#0C0F1A;--bg3:#111628;
-  --c:#00F5FF;--g:#00FF94;--r:#FF3B5C;--o:#FF9500;--y:#FFD60A;
-  --t:#5A7080;--t2:#8899AA;--border:rgba(0,245,255,.10);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'IBM Plex Mono',monospace;background:var(--bg0);color:#C5D5E8;min-height:100vh;overflow-x:hidden}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:900;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.12) 3px,rgba(0,0,0,.12) 4px);
-  mix-blend-mode:overlay}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 70% 45% at 15% 5%,rgba(0,245,255,.05) 0%,transparent 60%),
-             radial-gradient(ellipse 55% 40% at 85% 90%,rgba(0,255,148,.03) 0%,transparent 60%)}
-#app{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:24px 20px 80px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--c),transparent);opacity:.25}
-.card-l{border-left:2px solid var(--c)}.card-g{border-left:2px solid var(--g)}
-.card-r{border-left:2px solid var(--r)}.card-o{border-left:2px solid var(--o)}
-.syne{font-family:'Syne',sans-serif}
-.label{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--t);font-weight:600}
-.val-xl{font-size:26px;font-weight:700;line-height:1;letter-spacing:-.02em}
-.val-lg{font-size:20px;font-weight:700;line-height:1}
-.val-md{font-size:14px;font-weight:600}
-.val-sm{font-size:12px;font-weight:600}
-.plus{color:var(--g)}.minus{color:var(--r)}.cyan{color:var(--c)}.muted{color:var(--t2)}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--g);flex-shrink:0;
-  animation:pulse 2.5s infinite;box-shadow:0 0 0 0 rgba(0,255,148,.5)}
-.dot.off{background:var(--t);animation:none;box-shadow:none}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,255,148,.5)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.vel-card{background:linear-gradient(145deg,var(--bg2),var(--bg3));border:1px solid var(--border);
-  border-radius:12px;padding:20px 22px;position:relative;overflow:hidden}
-.vel-card::after{content:'';position:absolute;top:-30px;right:-30px;width:80px;height:80px;
-  border-radius:50%;background:rgba(0,245,255,.03)}
-.acc-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;
-  border-bottom:1px solid transparent;transition:background .2s,border-color .2s;user-select:none}
-.acc-header:hover{background:rgba(0,245,255,.025)}
-.acc-header.open{border-bottom-color:var(--border);background:rgba(0,245,255,.035)}
-.acc-body{display:none;padding:20px 22px 22px}
-.acc-body.open{display:block}
-.acc-arrow{margin-left:auto;transition:transform .25s;color:var(--t);font-size:11px;flex-shrink:0}
-.acc-header.open .acc-arrow{transform:rotate(180deg)}
+  :root {
+    --bg:       #05070D;
+    --surface:  #0B0F1A;
+    --border:   rgba(0,242,255,0.12);
+    --cyan:     #00F2FF;
+    --green:    #00FF94;
+    --red:      #FF4560;
+    --orange:   #FFA500;
+    --text:     #C8D6E5;
+    --muted:    #4A5568;
+  }
 
-/* CRITICAL Z-INDEX FIX for chart vs button */
-.port-chart-wrap{
-  position:relative;
-  z-index:1;
-  margin-bottom:0;
-  /* chart renders here */
-}
-.port-chart-wrap > div{position:relative;z-index:1}
-.port-actions{
-  position:relative;
-  z-index:20;      /* well above any chart canvas */
-  margin-top:14px;
-  pointer-events:auto !important;
-  display:flex;gap:8px;
-}
-.port-actions button{pointer-events:auto !important;position:relative;z-index:20}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
 
-table{width:100%;border-collapse:collapse}
-th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t);
-   padding:0 12px 12px;font-weight:600;text-align:right;cursor:pointer;white-space:nowrap;user-select:none}
-th:first-child{text-align:left}
-th:hover{color:var(--c)}
-th.asc::after{content:' ▲';color:var(--c)}
-th.dsc::after{content:' ▼';color:var(--c)}
-td{font-size:11px;padding:10px 12px;border-bottom:1px solid rgba(0,245,255,.04);text-align:right}
-td:first-child{text-align:left}
-tr:hover td{background:rgba(0,245,255,.02)}
-tfoot td{font-weight:700;font-size:12px;padding-top:14px;border-top:2px solid var(--border);border-bottom:none}
-.tab{padding:6px 14px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;
-     border:1px solid transparent;background:transparent;color:var(--t);transition:all .15s;font-family:inherit}
-.tab.active{background:rgba(0,245,255,.1);color:var(--c);border-color:var(--border)}
-.tab:hover:not(.active){color:#C5D5E8}
-.btn{padding:7px 16px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;
-     border:none;font-family:inherit;transition:all .15s;letter-spacing:.04em}
-.btn-c{background:var(--c);color:#000}.btn-c:hover{filter:brightness(1.1)}
-.btn-ghost{background:rgba(0,245,255,.08);color:var(--c);border:1px solid var(--border)}
-.btn-ghost:hover{background:rgba(0,245,255,.15)}
-input[type=date]{background:var(--bg3);border:1px solid var(--border);color:var(--c);
-  padding:6px 10px;border-radius:7px;font-size:10px;font-family:inherit;outline:none}
-input[type=date]:focus{border-color:var(--c)}
-.rbar-wrap{background:rgba(255,255,255,.06);border-radius:3px;height:3px;margin-top:6px}
-.rbar{height:3px;border-radius:3px;transition:width .5s ease}
-#loader{position:fixed;inset:0;z-index:9999;background:var(--bg0);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-.spin{width:42px;height:42px;border-radius:50%;border:2px solid var(--border);
-  border-top-color:var(--c);animation:spin .75s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#toast{position:fixed;bottom:24px;right:24px;z-index:9998;
-  background:var(--bg3);border:1px solid var(--border);border-radius:10px;
-  padding:11px 18px;font-size:11px;color:var(--c);max-width:320px;
-  transform:translateY(60px);opacity:0;transition:all .28s;pointer-events:none}
-#toast.show{transform:translateY(0);opacity:1}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.emg-btn{background:linear-gradient(135deg,rgba(255,59,92,.14),rgba(255,59,92,.07));
-  border:1px solid rgba(255,59,92,.3);color:var(--r);padding:9px 20px;border-radius:8px;
-  font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.08em;transition:all .2s}
-.emg-btn:hover{background:rgba(255,59,92,.22);box-shadow:0 0 18px rgba(255,59,92,.18)}
-.sec-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.sec-bar-line{flex:1;height:1px;background:var(--border)}
-.sec-tag{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--t);font-weight:700;white-space:nowrap}
-@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.fu{animation:fu .35s ease both}
-.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}.d4{animation-delay:.2s}
+  /* Grid scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,242,255,0.012) 2px, rgba(0,242,255,0.012) 4px
+    );
+    pointer-events: none; z-index: 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.4;
+  }
+  .card-accent { border-left: 2px solid var(--cyan); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-online  { background: rgba(0,255,148,0.1); color: var(--green); border: 1px solid rgba(0,255,148,0.3); }
+  .badge-offline { background: rgba(255,69,96,0.1);  color: var(--red);   border: 1px solid rgba(255,69,96,0.3); }
+  .badge-warn    { background: rgba(255,165,0,0.1);   color: var(--orange);border: 1px solid rgba(255,165,0,0.3); }
+
+  .stat-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; line-height: 1.1; }
+
+  .plus  { color: var(--green); }
+  .minus { color: var(--red); }
+  .cyan  { color: var(--cyan); }
+
+  .tab-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+    background: transparent; color: var(--muted);
+  }
+  .tab-btn.active { background: rgba(0,242,255,0.1); color: var(--cyan); border-color: var(--border); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .port-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .port-card:hover { box-shadow: 0 0 30px rgba(0,242,255,0.06); }
+  .port-card.danger { border-left-color: var(--red); }
+  .port-card.warn   { border-left-color: var(--orange); }
+
+  /* Pulse dot */
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(0,255,148,0.5);
+    animation: pulse 2s infinite;
+  }
+  .pulse-dot.offline { background: var(--muted); animation: none; }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0,255,148,0.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(0,255,148,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,255,148,0); }
+  }
+
+  /* Micro stat grid */
+  .micro-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .micro-stat .label { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .micro-stat .val   { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+  /* Risk bar */
+  .risk-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 4px; margin-top: 4px; }
+  .risk-bar      { height: 4px; border-radius: 4px; transition: width 0.5s; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 0 12px; }
+  td { font-size: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0,242,255,0.05); }
+  tr:last-child td { border-bottom: none; }
+  tfoot td { font-weight: 700; padding-top: 14px; border-top: 2px solid var(--border); font-size: 13px; }
+
+  /* Loader */
+  #loader {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+  }
+  .loader-ring {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--cyan);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .section-title {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+
+  input[type="date"] {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--cyan); padding: 5px 8px; border-radius: 6px;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    outline: none;
+  }
+  input[type="date"]:focus { border-color: var(--cyan); }
+
+  .btn {
+    padding: 6px 16px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; border: none;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .btn-primary { background: var(--cyan); color: #000; }
+  .btn-primary:hover { background: #00d4e0; }
+  .btn-ghost { background: rgba(0,242,255,0.08); color: var(--cyan); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: rgba(0,242,255,0.15); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
 </style>
 </head>
 <body>
+
+<!-- ============ LOADER ============ -->
 <div id="loader">
-  <div class="spin"></div>
-  <p style="font-size:10px;color:var(--t);letter-spacing:.15em">CONNECTING TO FIREBASE...</p>
+  <div class="loader-ring"></div>
+  <p class="mono" style="font-size:11px;color:var(--muted);">CONNECTING TO FIREBASE...</p>
 </div>
-<div id="toast"></div>
-<div id="app" style="display:none">
 
-  <!-- HEADER -->
-  <div class="fu" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;flex-wrap:wrap;gap:14px">
+<!-- ============ ERROR BOX ============ -->
+<div id="error-box" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:999;
+  background:#1a0a0a;border:1px solid var(--red);color:var(--red);padding:12px 24px;border-radius:8px;font-size:12px;font-family:'JetBrains Mono',monospace;">
+</div>
+
+<!-- ============ MAIN ============ -->
+<div id="app" style="display:none;" class="p-4 md:p-8 max-w-screen-2xl mx-auto space-y-6 relative z-10">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
-      <h1 class="syne" style="font-size:24px;font-weight:800;color:var(--c);letter-spacing:-.02em">
-        FISG <span style="color:var(--t);font-weight:400;font-size:18px">QUANT</span>
-      </h1>
-      <p class="label" style="margin-top:4px">Command Center · <span id="hdr-ports">—</span> ports · <span id="hdr-time">—</span></p>
+      <h1 class="text-xl font-bold tracking-tight" style="color:var(--cyan);">FISG ANALYTICS <span style="color:var(--muted);font-weight:300;">PRO</span></h1>
+      <p class="section-title mt-1">FIREBASE REALTIME · <span id="port-count">0</span> ACTIVE PORTS</p>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div class="dot" id="live-dot"></div>
-        <span class="label">LIVE</span>
-      </div>
-      <button class="emg-btn" onclick="sendEmergency()">⚠ CLOSE ALL</button>
+    <div class="flex items-center gap-3">
+      <div class="pulse-dot" id="connection-dot"></div>
+      <span id="connection-text" class="section-title">LIVE</span>
+      <span id="last-refresh" class="mono" style="font-size:10px;color:var(--muted);">--:--:--</span>
     </div>
   </div>
 
-  <!-- S1: GRAND OVERVIEW -->
-  <div class="sec-bar fu d1">
-    <span class="sec-tag">01 · Grand Overview</span>
-    <div class="sec-bar-line"></div>
-  </div>
-  <div class="fu d1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:30px">
-    <div class="card card-l" style="padding:18px 20px">
-      <p class="label">Total Equity</p><p class="val-xl cyan" id="ov-equity" style="margin-top:7px">—</p>
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="card card-accent p-5">
+      <p class="stat-label">Total Equity</p>
+      <p class="stat-value cyan mt-2" id="total-equity">0.00</p>
     </div>
-    <div class="card card-l" style="padding:18px 20px">
-      <p class="label">Total Balance</p><p class="val-xl" id="ov-balance" style="margin-top:7px;color:#C5D5E8">—</p>
+    <div class="card card-accent p-5">
+      <p class="stat-label">Total Net Profit</p>
+      <p class="stat-value mt-2" id="total-profit">0.00</p>
     </div>
-    <div class="card card-l" style="padding:18px 20px">
-      <p class="label">Net Deposit</p><p class="val-xl" id="ov-deposit" style="margin-top:7px;color:var(--t2)">—</p>
+    <div class="card card-accent p-5">
+      <p class="stat-label">Total Deposits</p>
+      <p class="stat-value mt-2" style="color:var(--text)" id="total-deposit">0.00</p>
     </div>
-    <div class="card card-l" style="padding:18px 20px">
-      <p class="label">Grand Profit (USC)</p><p class="val-xl" id="ov-profit" style="margin-top:7px">—</p>
-    </div>
-    <div class="card card-l" style="padding:18px 20px">
-      <p class="label">Portfolio Growth</p><p class="val-xl" id="ov-growth" style="margin-top:7px">—</p>
-    </div>
-    <div class="card card-r" style="padding:18px 20px">
-      <p class="label">Overall Max DD</p><p class="val-xl" id="ov-dd" style="margin-top:7px;color:var(--o)">—</p>
+    <div class="card card-accent p-5">
+      <p class="stat-label">Avg Max Drawdown</p>
+      <p class="stat-value mt-2" style="color:var(--orange)" id="avg-dd">0.00%</p>
     </div>
   </div>
 
-  <!-- S2: VELOCITY -->
-  <div class="sec-bar fu d2">
-    <span class="sec-tag">02 · Velocity &amp; Momentum</span>
-    <div class="sec-bar-line"></div>
-  </div>
-  <div class="fu d2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:30px">
-    <div class="vel-card">
-      <p class="label">Last 1 Hour</p>
-      <p class="val-lg" id="v1h" style="margin-top:10px">—</p>
-      <p class="label" id="v1h-sub" style="margin-top:5px">— ports</p>
-    </div>
-    <div class="vel-card">
-      <p class="label">Last 6 Hours</p>
-      <p class="val-lg" id="v6h" style="margin-top:10px">—</p>
-      <p class="label" id="v6h-sub" style="margin-top:5px">— ports</p>
-    </div>
-    <div class="vel-card">
-      <p class="label">Today (from 00:00)</p>
-      <p class="val-lg" id="vtd" style="margin-top:10px">—</p>
-      <p class="label" id="vtd-sub" style="margin-top:5px">— ports</p>
-    </div>
-    <div class="vel-card" style="background:linear-gradient(145deg,rgba(255,59,92,.05),var(--bg2))">
-      <p class="label" style="color:rgba(255,59,92,.7)">DD Alert</p>
-      <p class="val-lg" id="vdd" style="margin-top:10px;color:var(--o)">—</p>
-      <p class="label" id="vdd-sub" style="margin-top:5px">— ports &gt;10% DD</p>
-    </div>
+  <!-- Port Cards Grid -->
+  <div>
+    <p class="section-title mb-4">PORTFOLIO OVERVIEW</p>
+    <div id="port-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5"></div>
   </div>
 
-  <!-- S3: DEEP-DIVE PORTFOLIOS -->
-  <div class="sec-bar fu d3">
-    <span class="sec-tag">03 · Deep-Dive Portfolios</span>
-    <div class="sec-bar-line"></div>
-    <button class="tab" onclick="allAcc(true)"  style="white-space:nowrap">Expand All</button>
-    <button class="tab" onclick="allAcc(false)" style="white-space:nowrap;margin-left:4px">Collapse All</button>
-  </div>
-  <div id="acc-list" class="fu d3" style="display:flex;flex-direction:column;gap:8px;margin-bottom:30px"></div>
-
-  <!-- S4: PERFORMANCE GRID -->
-  <div class="sec-bar fu d4">
-    <span class="sec-tag">04 · Performance Grid</span>
-    <div class="sec-bar-line"></div>
-  </div>
-  <div class="card fu d4" style="padding:24px">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:20px">
-      <button class="tab active" onclick="setPeriod('today',this)">Today</button>
-      <button class="tab" onclick="setPeriod('week',this)">Week</button>
-      <button class="tab" onclick="setPeriod('month',this)">Month</button>
-      <button class="tab" onclick="setPeriod('year',this)">Year</button>
-      <button class="tab" onclick="setPeriod('all',this)">All Time</button>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <input type="date" id="d-start">
-        <span style="color:var(--t);font-size:10px">→</span>
-        <input type="date" id="d-end">
-        <button class="btn btn-c" onclick="calcTable()">GO</button>
+  <!-- Performance Table -->
+  <div class="card p-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <p class="section-title">PERFORMANCE GRID</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <button class="tab-btn active" onclick="setPeriod('today')">Today</button>
+        <button class="tab-btn" onclick="setPeriod('week')">Week</button>
+        <button class="tab-btn" onclick="setPeriod('month')">Month</button>
+        <button class="tab-btn" onclick="setPeriod('year')">Year</button>
+        <input type="date" id="date-start">
+        <span style="color:var(--muted);font-size:11px;">→</span>
+        <input type="date" id="date-end">
+        <button class="btn btn-primary" onclick="calculateCustomProfit()">คำนวณ</button>
       </div>
     </div>
-    <div style="overflow-x:auto">
+    <div class="overflow-x-auto">
       <table>
-        <thead><tr>
-          <th onclick="sortBy('name')"    style="text-align:left">Port ID</th>
-          <th onclick="sortBy('profit')"  >Profit (USC)</th>
-          <th onclick="sortBy('growth')"  >Growth %</th>
-          <th onclick="sortBy('winRate')" >Win Rate</th>
-          <th onclick="sortBy('pf')"      >Profit Factor</th>
-          <th onclick="sortBy('dd')"      >Max DD</th>
-          <th onclick="sortBy('online')"  >Status</th>
-        </tr></thead>
-        <tbody id="t-body"></tbody>
-        <tfoot><tr>
-          <td style="text-align:left;color:var(--c)">GRAND TOTAL</td>
-          <td id="ft-p">—</td><td id="ft-g">—</td>
-          <td colspan="4"></td>
-        </tr></tfoot>
+        <thead>
+          <tr>
+            <th class="text-left">Port ID</th>
+            <th class="text-right">Profit</th>
+            <th class="text-right">Growth %</th>
+            <th class="text-right">Win Rate</th>
+            <th class="text-right">Profit Factor</th>
+            <th class="text-right">Max DD</th>
+          </tr>
+        </thead>
+        <tbody id="period-table"></tbody>
+        <tfoot>
+          <tr>
+            <td style="color:var(--cyan);">GRAND TOTAL</td>
+            <td class="text-right mono" id="grand-profit">—</td>
+            <td class="text-right mono" id="grand-growth">—</td>
+            <td class="text-right" colspan="3"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
 
-</div><!-- /app -->
-
-<script>
-// ── UTILS ──
-const $=id=>document.getElementById(id);
-const fmt=(v,d=2)=>parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
-const sgn=v=>parseFloat(v||0)>=0?'+':'';
-const clsc=v=>parseFloat(v||0)>=0?'plus':'minus';
-const pct=v=>(parseFloat(v||0)>=0?'+':'')+parseFloat(v||0).toFixed(2)+'%';
-function toDS(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function parsDS(s,end=false){if(!s)return end?Date.now():0;const[y,m,d]=s.split('-').map(Number);return end?new Date(y,m-1,d,23,59,59,999).getTime():new Date(y,m-1,d).getTime()}
-function toast(msg,col='var(--c)'){const t=$('toast');t.textContent=msg;t.style.color=col;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200)}
-
-// ── STATE ──
-let DB={}, charts={}, tableRows=[], sortCol='profit', sortDir=-1;
-
-// ── FIREBASE ──
-function boot(){
-  const {__db:db,__ref:ref,__onValue:onValue}=window;
-  onValue(ref(db,'ports'),snap=>{
-    DB=snap.val()||{};
-    render();
-    $('loader').style.display='none';
-    $('app').style.display='block';
-  },err=>{$('loader').innerHTML=`<p style="color:var(--r);font-size:11px">Firebase: ${err.message}</p>`});
-}
-if(window.__db) boot(); else document.addEventListener('fb-ready',boot);
-
-// ── BUILD PORTS ──
-function buildPorts(){
-  return Object.entries(DB).map(([id,data])=>{
-    const s=data.status||{};
-    const bal=+s.balance||0, eq=+s.equity||0;
-    const dep=+s.net_deposit||0;   // sum of ALL DEAL_TYPE_BALANCE (done in MQ5)
-    const maxDD=+s.max_drawdown||+s.drawdown||0;
-    const curDD=+s.drawdown||0;
-    const lastUp=s.last_update?+s.last_update*1000:0;
-    const ageMin=lastUp?(Date.now()-lastUp)/60000:9999;
-    const isOnline=ageMin<15;
-
-    // history: {ts_sec: daily_profit}
-    const history=Object.entries(data.daily_history||{})
-      .map(([ts,p])=>({d:+ts*1000,p:+p})).sort((a,b)=>a.d-b.d);
-
-    // trade_log: {pushKey:{profit,time}} — profit = DEAL_PROFIT+SWAP+COMM (MQ5)
-    const trades=data.trade_log?Object.values(data.trade_log):[];
-
-    // STRICT MATH
-    const w=trades.filter(t=>+t.profit>0), l=trades.filter(t=>+t.profit<0);
-    const grossW=w.reduce((a,t)=>a+(+t.profit),0);
-    const grossL=l.reduce((a,t)=>a+Math.abs(+t.profit),0);
-    const totalTrades=w.length+l.length;
-
-    // Net Profit = Balance - Net Deposit
-    const totalProfit=bal-dep;
-    // Growth = Total Trade Profit / Net Deposit * 100
-    const growth=dep>0?totalProfit/dep*100:0;
-    // Win Rate = Winning / Total * 100
-    const winRate=totalTrades>0?w.length/totalTrades*100:0;
-    // Profit Factor = Gross Profit / |Gross Loss|
-    const pf=grossL>0?grossW/grossL:(grossW>0?Infinity:0);
-    // Expectancy
-    const avgW=w.length>0?grossW/w.length:0;
-    const avgL=l.length>0?grossL/l.length:0;
-    const expectancy=totalTrades>0?(winRate/100*avgW)-((1-winRate/100)*avgL):0;
-
-    return{id,bal,eq,dep,maxDD,curDD,isOnline,ageMin,
-           broker:s.broker||'—',currency:s.currency||'USC',
-           history,trades,totalProfit,growth,winRate,pf,expectancy,
-           wins:w.length,losses:l.length,totalTrades,grossW,grossL,
-           openTrades:Array.isArray(s.open_trades)?s.open_trades:[]};
-  });
-}
-
-// ── RENDER ALL ──
-function render(){
-  const p=buildPorts();
-  renderOverview(p); renderVelocity(p);
-  renderAccordions(p); calcTable();
-}
-
-// ── S1: OVERVIEW ──
-function renderOverview(ports){
-  const tEq=ports.reduce((a,p)=>a+p.eq,0);
-  const tBal=ports.reduce((a,p)=>a+p.bal,0);
-  const tDep=ports.reduce((a,p)=>a+p.dep,0);
-  const tP=tBal-tDep;
-  const growth=tDep>0?tP/tDep*100:0;
-  const avgDD=ports.length?ports.reduce((a,p)=>a+p.maxDD,0)/ports.length:0;
-  const online=ports.filter(p=>p.isOnline).length;
-
-  $('ov-equity').textContent=fmt(tEq);
-  $('ov-balance').textContent=fmt(tBal);
-  $('ov-deposit').textContent=fmt(tDep);
-  const pr=$('ov-profit'); pr.textContent=sgn(tP)+fmt(tP); pr.className='val-xl '+(tP>=0?'plus':'minus');
-  const gr=$('ov-growth'); gr.textContent=pct(growth); gr.className='val-xl '+(growth>=0?'plus':'minus');
-  const dd=$('ov-dd'); dd.textContent=fmt(avgDD)+'%'; dd.style.color=avgDD>20?'var(--r)':avgDD>10?'var(--o)':'var(--g)';
-  $('hdr-ports').textContent=online+'/'+ports.length;
-  $('live-dot').className='dot'+(online===0?' off':'');
-}
-
-// ── S2: VELOCITY (exact JS timestamps) ──
-function renderVelocity(ports){
-  const now=Date.now();
-  const ms1h=now-3600000, ms6h=now-21600000;
-  const td=new Date(); td.setHours(0,0,0,0); const msTd=td.getTime();
-  let p1h=0,p6h=0,ptd=0,a1h=0,a6h=0,atd=0,ddP=0,ddN=0;
-  ports.forEach(p=>{
-    // trade_log uses time in seconds from MQ5 → multiply by 1000
-    const t1h =p.trades.filter(t=>+t.time*1000>=ms1h).reduce((a,t)=>a+(+t.profit),0);
-    const t6h =p.trades.filter(t=>+t.time*1000>=ms6h).reduce((a,t)=>a+(+t.profit),0);
-    const ttd =p.trades.filter(t=>+t.time*1000>=msTd).reduce((a,t)=>a+(+t.profit),0);
-    p1h+=t1h; p6h+=t6h; ptd+=ttd;
-    if(p.trades.some(t=>+t.time*1000>=ms1h)) a1h++;
-    if(p.trades.some(t=>+t.time*1000>=ms6h)) a6h++;
-    if(p.trades.some(t=>+t.time*1000>=msTd)) atd++;
-    if(p.maxDD>10){ddP+=p.maxDD; ddN++}
-  });
-  function sv(id,sub,v,n,label){
-    const el=$(id); el.textContent=(v>=0?'+':'')+fmt(v); el.className='val-lg '+(v>=0?'plus':'minus');
-    $(sub).textContent=n+' port'+(n!==1?'s':'')+' '+(label||'active');
-  }
-  sv('v1h','v1h-sub',p1h,a1h); sv('v6h','v6h-sub',p6h,a6h); sv('vtd','vtd-sub',ptd,atd);
-  $('vdd').textContent=ddN>0?fmt(ddP/ddN)+'% avg':'All Clear';
-  $('vdd').style.color=ddN>0?'var(--r)':'var(--g)';
-  $('vdd-sub').textContent=ddN+' port'+(ddN!==1?'s':'')+' >10% DD';
-}
-
-// ── S3: ACCORDIONS ──
-function renderAccordions(ports){
-  const list=$('acc-list');
-  const wasOpen={};
-  list.querySelectorAll('.acc-header.open').forEach(h=>wasOpen[h.dataset.id]=true);
-  list.innerHTML='';
-
-  ports.forEach(p=>{
-    const open=!!wasOpen[p.id];
-    const sid=p.id.replace(/\W/g,'_');
-    const ddC=p.maxDD>20?'var(--r)':p.maxDD>10?'var(--o)':'var(--g)';
-    const pfStr=p.pf===Infinity?'∞':p.pf.toFixed(2);
-
-    const div=document.createElement('div');
-    div.className='card';
-    div.style.overflow='visible'; // allow z-index stacking for button
-
-    div.innerHTML=`
-<div class="acc-header${open?' open':''}" data-id="${p.id}" onclick="togAcc(this)">
-  <div class="dot${p.isOnline?'':' off'}"></div>
-  <div style="min-width:0">
-    <p class="val-sm cyan">${p.id}</p>
-    <p class="label" style="margin-top:2px">${p.broker} · ${p.currency}</p>
-  </div>
-  <div style="margin-left:auto;text-align:right;margin-right:12px;flex-shrink:0">
-    <p class="val-sm ${clsc(p.totalProfit)}">${sgn(p.totalProfit)}${fmt(p.totalProfit)}</p>
-    <p class="label" style="margin-top:2px">${pct(p.growth)} growth</p>
-  </div>
-  <span style="font-size:9px;color:var(--t);flex-shrink:0;margin-right:8px">${p.isOnline?Math.round(p.ageMin)+'m ago':'OFFLINE'}</span>
-  <span class="acc-arrow">▼</span>
 </div>
-<div class="acc-body${open?' open':''}" id="ab-${sid}">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px">
-    <div>
-      <p class="label" style="margin-bottom:10px;color:var(--t2)">Financials</p>
-      ${kv('Balance',    fmt(p.bal),        '#C5D5E8')}
-      ${kv('Equity',     fmt(p.eq),         'var(--c)')}
-      ${kv('Net Deposit',fmt(p.dep),        'var(--t2)')}
-      ${kv('Net Profit', sgn(p.totalProfit)+fmt(p.totalProfit), p.totalProfit>=0?'var(--g)':'var(--r)')}
-      ${kv('Growth',     pct(p.growth),     p.growth>=0?'var(--g)':'var(--r)')}
-    </div>
-    <div>
-      <p class="label" style="margin-bottom:10px;color:var(--t2)">Performance</p>
-      ${kv('Win Rate',      p.winRate.toFixed(1)+'%', p.winRate>=50?'var(--g)':'var(--r)')}
-      ${kv('Profit Factor', pfStr,                    'var(--c)')}
-      ${kv('Expectancy',    sgn(p.expectancy)+fmt(p.expectancy), p.expectancy>=0?'var(--g)':'var(--r)')}
-      ${kv('Wins / Losses','<span class="plus">'+p.wins+'</span> / <span class="minus">'+p.losses+'</span>','')}
-      ${kv('Max DD',        p.maxDD.toFixed(2)+'%',   ddC)}
-      <div class="rbar-wrap"><div class="rbar" style="width:${Math.min(p.maxDD,100)}%;background:${ddC}"></div></div>
-    </div>
-  </div>
 
-  ${p.openTrades.length?`
-  <div style="margin-bottom:16px;padding:12px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
-    <p class="label" style="margin-bottom:8px;color:var(--t2)">Open Positions (${p.openTrades.length})</p>
-    ${p.openTrades.map(t=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(0,245,255,.05);font-size:10px">
-      <span style="color:${t.type==='BUY'?'var(--g)':'var(--r)';font-weight:700">${t.type}</span>
-      <span style="color:var(--c)">${t.sym}</span>
-      <span style="color:var(--t2)">${t.lots}L</span>
-      <span class="${clsc(t.profit)}">${sgn(t.profit)}${fmt(t.profit)}</span>
-    </div>`).join('')}
-  </div>`:''}
+<script type="module">
+// ──────────────────────────────────────────
+// CONFIG — แก้ตรงนี้
+// ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// Firebase Init
+// ──────────────────────────────────────────
+const { initializeApp, getDatabase, ref, onValue, get } = window.__firebaseModules;
 
-  <!-- CHART ZONE — z-index:1, isolated from button -->
-  <div class="port-chart-wrap">
-    <p class="label" style="margin-bottom:8px;color:var(--t2)">Equity Curve (% Growth)</p>
-    <div id="ch-${sid}" style="height:155px;position:relative;z-index:1;pointer-events:auto"></div>
-  </div>
+const app = initializeApp({
+  apiKey:            "AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
+  authDomain:        "fisg-analytics.firebaseapp.com",
+  databaseURL:       "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "fisg-analytics",
+  storageBucket:     "fisg-analytics.firebasestorage.app",
+  messagingSenderId: "78360571677",
+  appId:             "1:78360571677:web:04797d955a553df1b3fbf4"
+});
+const db = getDatabase(app);
 
-  <!-- ACTIONS — z-index:20, always above chart -->
-  <div class="port-actions">
-    <button class="btn btn-ghost" style="flex:1;position:relative;z-index:20" onclick="copyLink('${p.id}')">
-      🔗 Copy Public Link
-    </button>
-    <button class="btn" style="background:rgba(0,245,255,.05);color:var(--t2);border:1px solid var(--border);position:relative;z-index:20"
-      onclick="redrawChart('${p.id}')">↻</button>
-  </div>
-</div>`;
+// ──────────────────────────────────────────
+// State
+// ──────────────────────────────────────────
+let globalPorts = {};
+let charts      = {};
 
-    list.appendChild(div);
-    if(open) setTimeout(()=>drawChart(p),80);
+const fmt    = v => parseFloat(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const clrCls = v => parseFloat(v) >= 0 ? 'plus' : 'minus';
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 6000);
+}
+
+// ──────────────────────────────────────────
+// Firebase Listener — realtime
+// ──────────────────────────────────────────
+function initListeners() {
+  const portsRef = ref(db, 'ports');
+  onValue(portsRef, snapshot => {
+    const data = snapshot.val();
+    if (!data) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('port-grid').innerHTML =
+        '<p style="color:var(--muted);font-size:12px;">ยังไม่มีข้อมูล — รอให้ EA ส่งข้อมูลมาครับ</p>';
+      return;
+    }
+    globalPorts = data;
+    renderDashboard(data);
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
+  }, err => {
+    document.getElementById('loader').style.display = 'none';
+    showError('Firebase error: ' + err.message);
   });
 }
 
-function kv(label,val,color){
-  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
-    <span class="label">${label}</span>
-    <span style="font-size:11px;font-weight:600;color:${color||'#C5D5E8'}">${val}</span>
-  </div>`;
-}
+// ──────────────────────────────────────────
+// Render Dashboard
+// ──────────────────────────────────────────
+function renderDashboard(ports) {
+  let totalEquity = 0, totalDeposit = 0, totalProfit = 0, ddSum = 0, portCount = 0;
 
-function togAcc(hdr){
-  const sid=hdr.dataset.id.replace(/\W/g,'_');
-  const body=$('ab-'+sid);
-  const op=hdr.classList.contains('open');
-  hdr.classList.toggle('open',!op); body.classList.toggle('open',!op);
-  if(!op){const p=buildPorts().find(x=>x.id===hdr.dataset.id);if(p)setTimeout(()=>drawChart(p),70)}
-}
-function allAcc(open){
-  document.querySelectorAll('.acc-header').forEach(hdr=>{
-    const sid=hdr.dataset.id.replace(/\W/g,'_'); const body=$('ab-'+sid);
-    hdr.classList.toggle('open',open); body.classList.toggle('open',open);
-    if(open){const p=buildPorts().find(x=>x.id===hdr.dataset.id);if(p)setTimeout(()=>drawChart(p),70)}
+  const portArray = Object.entries(ports).map(([id, data]) => {
+    const s = data.status || {};
+    const b = parseFloat(s.balance  || 0);
+    const e = parseFloat(s.equity   || 0);
+    const d = parseFloat(s.net_deposit || 0);
+    const dd= parseFloat(s.max_drawdown || s.drawdown || 0);
+
+    totalEquity  += e;
+    totalDeposit += d;
+    totalProfit  += (b - d);
+    ddSum        += dd;
+    portCount++;
+
+    // Build history array from daily_history object
+    const dailyRaw = data.daily_history || {};
+    const history  = Object.entries(dailyRaw)
+      .map(([ts, p]) => ({ d: parseInt(ts) * 1000, p: parseFloat(p) }))
+      .sort((a, b) => a.d - b.d);
+
+    // Trade log for stats
+    const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
+    const stats    = calcStats(tradeLog);
+
+    // Last update age
+    const lastUpdate = s.last_update ? parseInt(s.last_update) * 1000 : 0;
+    const ageMin     = lastUpdate ? (Date.now() - lastUpdate) / 60000 : 999;
+    const isOnline   = ageMin < 15;
+
+    return { id, balance: b, equity: e, deposit: d, dd, max_dd: dd,
+             wins: s.wins || 0, losses: s.losses || 0,
+             open_trades: s.open_trades || [],
+             broker: s.broker || '', currency: s.currency || 'USD',
+             history, stats, isOnline, ageMin };
   });
+
+  // Summaries
+  document.getElementById('total-equity').textContent  = fmt(totalEquity);
+  document.getElementById('total-deposit').textContent = fmt(totalDeposit);
+  document.getElementById('port-count').textContent    = portCount;
+
+  const tp = document.getElementById('total-profit');
+  tp.textContent  = fmt(totalProfit);
+  tp.className    = 'stat-value mt-2 ' + clrCls(totalProfit);
+
+  const avgDD = portCount ? ddSum / portCount : 0;
+  document.getElementById('avg-dd').textContent = avgDD.toFixed(2) + '%';
+  document.getElementById('avg-dd').style.color =
+    avgDD > 20 ? 'var(--red)' : avgDD > 10 ? 'var(--orange)' : 'var(--green)';
+
+  // Port cards
+  const grid = document.getElementById('port-grid');
+  grid.innerHTML = '';
+
+  portArray.forEach(p => {
+    const totalP  = p.balance - p.deposit;
+    const growth  = p.deposit > 0 ? (totalP / p.deposit * 100) : 0;
+    const ddClass = p.dd > 20 ? 'danger' : p.dd > 10 ? 'warn' : '';
+    const openCount = Array.isArray(p.open_trades) ? p.open_trades.length : 0;
+    const openProfit = Array.isArray(p.open_trades)
+      ? p.open_trades.reduce((s, t) => s + parseFloat(t.profit || 0), 0) : 0;
+
+    const card = document.createElement('div');
+    card.className = `port-card ${ddClass} fade-in`;
+    card.id = 'card-' + p.id.replace(/\W/g, '');
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div class="pulse-dot ${p.isOnline ? '' : 'offline'}"></div>
+            <span style="font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.05em;">${p.id}</span>
+          </div>
+          <span style="font-size:10px;color:var(--muted);">${p.broker || '—'} · ${p.currency}</span>
+        </div>
+        <div style="text-align:right;">
+          <div class="badge ${p.isOnline ? 'badge-online' : 'badge-offline'}">
+            ${p.isOnline ? '● ONLINE' : '○ OFFLINE'}
+          </div>
+          <p style="font-size:9px;color:var(--muted);margin-top:4px;">${p.isOnline ? Math.round(p.ageMin) + 'm ago' : 'last seen ' + Math.round(p.ageMin) + 'm ago'}</p>
+        </div>
+      </div>
+
+      <!-- Equity Chart -->
+      <div id="chart-${p.id.replace(/\W/g,'')}" style="height:100px;margin-bottom:12px;"></div>
+
+      <!-- Main stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <p class="stat-label">Balance</p>
+          <p class="mono" style="font-size:16px;font-weight:700;color:var(--text);margin-top:2px;">${fmt(p.balance)}</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="stat-label">Equity</p>
+          <p class="mono" style="font-size:16px;font-weight:700;color:var(--cyan);margin-top:2px;">${fmt(p.equity)}</p>
+        </div>
+        <div>
+          <p class="stat-label">Net Profit</p>
+          <p class="mono ${clrCls(totalP)}" style="font-size:14px;font-weight:700;margin-top:2px;">${fmt(totalP)}</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="stat-label">Growth</p>
+          <p class="mono ${clrCls(growth)}" style="font-size:14px;font-weight:700;margin-top:2px;">${growth.toFixed(2)}%</p>
+        </div>
+      </div>
+
+      <!-- Drawdown bar -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span class="stat-label">Max Drawdown</span>
+          <span class="mono" style="font-size:10px;color:${p.dd>20?'var(--red)':p.dd>10?'var(--orange)':'var(--green)'};">${p.dd.toFixed(2)}%</span>
+        </div>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar" style="width:${Math.min(p.dd,100)}%;background:${p.dd>20?'var(--red)':p.dd>10?'var(--orange)':'var(--green)'};"></div>
+        </div>
+      </div>
+
+      <!-- Micro stats -->
+      <div class="micro-grid">
+        <div class="micro-stat">
+          <div class="label">Win Rate</div>
+          <div class="val ${clrCls(p.stats.winRate - 50)}">${p.stats.winRate}%</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Profit Factor</div>
+          <div class="val" style="color:var(--cyan);">${p.stats.profitFactor}</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Expectancy</div>
+          <div class="val ${clrCls(p.stats.expectancy)}">${fmt(p.stats.expectancy)}</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Wins / Losses</div>
+          <div class="val"><span class="plus">${p.wins}</span> / <span class="minus">${p.losses}</span></div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Open Trades</div>
+          <div class="val" style="color:var(--cyan);">${openCount}</div>
+        </div>
+        <div class="micro-stat">
+          <div class="label">Float P/L</div>
+          <div class="val ${clrCls(openProfit)}">${fmt(openProfit)}</div>
+        </div>
+      </div>
+
+      <!-- Open trades detail -->
+      ${openCount > 0 ? `
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <p class="stat-label" style="margin-bottom:6px;">OPEN POSITIONS</p>
+        ${(Array.isArray(p.open_trades) ? p.open_trades : []).map(t => `
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px;">
+            <span style="color:${t.type==='BUY'?'var(--green)':'var(--red)'};">${t.type}</span>
+            <span class="mono" style="color:var(--text);">${t.sym}</span>
+            <span class="mono" style="color:var(--muted);">${t.lots}L</span>
+            <span class="mono ${clrCls(t.profit)}">${fmt(t.profit)}</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <!-- Share button -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;font-size:10px;" onclick="copyPublicLink('${p.id}')">
+          🔗 Copy Public Link
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    // Draw chart after DOM insert
+    setTimeout(() => drawEquityChart(p), 50);
+  });
+
+  // Update performance table
+  if(!document.getElementById('date-start').value) setPeriod('month');
+  calculateCustomProfit();
 }
 
-// ── CHART ──
-function drawChart(p){
-  const sid=p.id.replace(/\W/g,'_'), el=$('ch-'+sid);
-  if(!el) return;
-  if(!p.history.length){el.innerHTML='<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--t);font-size:10px">No history data yet</div>';return}
-  if(charts[p.id])try{charts[p.id].destroy()}catch(e){}
-  let cum=0;
-  const series=p.history.map(h=>{cum+=h.p;return{x:h.d,y:p.dep>0?+(cum/p.dep*100).toFixed(3):0}});
-  const last=series[series.length-1]?.y||0;
-  const col=last>=0?'#00FF94':'#FF3B5C';
-  charts[p.id]=new ApexCharts(el,{
-    chart:{type:'area',height:'100%',toolbar:{show:false},background:'transparent',
-           animations:{enabled:true,speed:450},zoom:{enabled:false},selection:{enabled:false}},
-    grid:{show:false,padding:{top:2,right:2,bottom:-12,left:-8}},
-    stroke:{curve:'smooth',width:2,colors:[col]},
-    fill:{type:'gradient',gradient:{colorStops:[{offset:0,color:col,opacity:.35},{offset:100,color:col,opacity:0}]}},
-    series:[{name:'Growth%',data:series}],
-    xaxis:{type:'datetime',labels:{show:false},axisBorder:{show:false},axisTicks:{show:false},crosshairs:{show:false}},
-    yaxis:{show:false},
-    tooltip:{theme:'dark',x:{format:'dd MMM yy'},y:{formatter:v=>v.toFixed(2)+'%'},style:{fontFamily:'IBM Plex Mono',fontSize:'10px'}},
-    markers:{size:0},dataLabels:{enabled:false}
+// ──────────────────────────────────────────
+// Chart
+// ──────────────────────────────────────────
+function drawEquityChart(p) {
+  const containerId = 'chart-' + p.id.replace(/\W/g, '');
+  const container   = document.getElementById(containerId);
+  if (!container || !p.history.length) {
+    if(container) container.innerHTML =
+      '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;">ข้อมูลไม่เพียงพอ</div>';
+    return;
+  }
+
+  // Destroy old chart
+  if (charts[p.id]) { try { charts[p.id].destroy(); } catch(e){} }
+
+  let cum = 0;
+  const series = p.history.map(h => {
+    cum += h.p;
+    return { x: h.d, y: p.deposit > 0 ? parseFloat((cum / p.deposit * 100).toFixed(2)) : 0 };
+  });
+
+  const isPositive = series[series.length - 1]?.y >= 0;
+  const color      = isPositive ? '#00FF94' : '#FF4560';
+
+  charts[p.id] = new ApexCharts(container, {
+    chart: {
+      type: 'area', height: '100%',
+      toolbar: { show: false }, sparkline: { enabled: false },
+      animations: { enabled: true, speed: 400 },
+      background: 'transparent',
+    },
+    grid: { show: false, padding: { top: 5, right: 0, bottom: -15, left: -10 } },
+    stroke: { curve: 'smooth', width: 2, colors: [color] },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.4, opacityTo: 0.0,
+        stops: [0, 100],
+        colorStops: [{ offset: 0, color, opacity: 0.4 }, { offset: 100, color, opacity: 0 }]
+      }
+    },
+    series: [{ name: 'Growth %', data: series }],
+    xaxis: { type: 'datetime', labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { show: false },
+    tooltip: {
+      theme: 'dark',
+      x: { format: 'dd MMM yyyy' },
+      y: { formatter: v => v + '%' },
+      style: { fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }
+    },
   });
   charts[p.id].render();
 }
-function redrawChart(id){const p=buildPorts().find(x=>x.id===id);if(p)drawChart(p)}
 
-// ── S4: TABLE ──
-let tRows=[];
-function setPeriod(p,btn){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  const now=new Date(),s=new Date(now);
-  if(p==='today')s.setHours(0,0,0,0);
-  else if(p==='week')s.setDate(now.getDate()-now.getDay());
-  else if(p==='month')s.setDate(1);
-  else if(p==='year'){s.setMonth(0);s.setDate(1)}
-  else if(p==='all'){$('d-start').value='';$('d-end').value=toDS(now);calcTable();return}
-  $('d-start').value=toDS(s); $('d-end').value=toDS(now); calcTable();
+// ──────────────────────────────────────────
+// Stats Calculator
+// ──────────────────────────────────────────
+function calcStats(tradeLog) {
+  const profits = tradeLog.map(t => parseFloat(t.profit || 0)).filter(p => p !== 0);
+  if (!profits.length) return { winRate: 0, profitFactor: '—', expectancy: 0 };
+
+  const wins   = profits.filter(p => p > 0);
+  const losses = profits.filter(p => p < 0);
+  const sumW   = wins.reduce((a, b) => a + b, 0);
+  const sumL   = Math.abs(losses.reduce((a, b) => a + b, 0));
+
+  return {
+    winRate     : (wins.length / profits.length * 100).toFixed(1),
+    profitFactor: sumL > 0 ? (sumW / sumL).toFixed(2) : '∞',
+    expectancy  : (profits.reduce((a, b) => a + b, 0) / profits.length).toFixed(2),
+  };
 }
-function calcTable(){
-  const start=parsDS($('d-start').value), end=parsDS($('d-end').value,true)||Date.now();
-  tRows=buildPorts().map(p=>{
-    const fp=p.history.filter(h=>h.d>=start&&h.d<=end).reduce((a,h)=>a+h.p,0);
-    const fg=p.dep>0?fp/p.dep*100:0;
-    return{name:p.id,profit:fp,growth:fg,winRate:p.winRate,pf:p.pf===Infinity?999:p.pf,
-           _pf:p.pf,dd:p.maxDD,online:p.isOnline?1:0,dep:p.dep};
-  });
-  renderTable();
+
+// ──────────────────────────────────────────
+// Period Filter
+// ──────────────────────────────────────────
+function toLocalDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
 }
-function sortBy(col){
-  document.querySelectorAll('th').forEach(t=>t.classList.remove('asc','dsc'));
-  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=-1}
-  event.target.classList.add(sortDir===1?'asc':'dsc');
-  renderTable();
-}
-function renderTable(){
-  const sorted=[...tRows].sort((a,b)=>{
-    const av=a[sortCol],bv=b[sortCol];
-    return typeof av==='string'?av.localeCompare(bv)*sortDir:(av-bv)*sortDir;
-  });
-  let gP=0,gD=0;
-  $('t-body').innerHTML=sorted.map(r=>{
-    gP+=r.profit; gD+=r.dep;
-    const pfS=r._pf===Infinity?'∞':r._pf.toFixed(2);
-    return`<tr>
-      <td style="text-align:left;color:var(--c);font-weight:700">${r.name}</td>
-      <td class="${clsc(r.profit)}">${sgn(r.profit)}${fmt(r.profit)}</td>
-      <td class="${clsc(r.growth)}">${pct(r.growth)}</td>
-      <td style="color:${r.winRate>=50?'var(--g)':'var(--r)'}">${r.winRate.toFixed(1)}%</td>
-      <td style="color:var(--c)">${pfS}</td>
-      <td style="color:${r.dd>20?'var(--r)':r.dd>10?'var(--o)':'var(--g)'}">${r.dd.toFixed(2)}%</td>
-      <td><span style="font-size:9px;padding:2px 9px;border-radius:10px;${r.online?'background:rgba(0,255,148,.1);color:var(--g)':'background:rgba(90,112,128,.12);color:var(--t2)'}">${r.online?'ONLINE':'OFFLINE'}</span></td>
+window.setPeriod = function(p) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (typeof event !== 'undefined' && event && event.target) try { if(event && event.target) event.target.classList.add('active'); } catch(e) {};
+  const now = new Date(); let start = new Date(now);
+  if (p === 'today') start.setHours(0, 0, 0, 0);
+  if (p === 'week')  start.setDate(now.getDate() - now.getDay());
+  if (p === 'month') start.setDate(1);
+  if (p === 'year')  start = new Date(now.getFullYear(), 0, 1);
+  document.getElementById('date-start').value = toLocalDateStr(start);
+  document.getElementById('date-end').value   = toLocalDateStr(now);
+  calculateCustomProfit();
+};
+
+window.calculateCustomProfit = function() {
+  if (!globalPorts || !Object.keys(globalPorts).length) return;
+
+  const startVal = document.getElementById('date-start').value;
+  const endVal   = document.getElementById('date-end').value;
+  if (!startVal || !endVal) return;
+
+  // parse local date ถูกต้อง ไม่ shift timezone
+  const [sy, sm, sd] = startVal.split('-').map(Number);
+  const [ey, em, ed] = endVal.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0).getTime();
+  const end   = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+
+  let grandP = 0, totalDep = 0;
+  let rows = '';
+
+  Object.entries(globalPorts).forEach(([id, data]) => {
+    const s       = data.status || {};
+    const deposit = parseFloat(s.net_deposit || 0);
+    const daily   = data.daily_history || {};
+
+    const pProfit = Object.entries(daily)
+      .filter(([ts]) => {
+        const d = parseInt(ts) * 1000;
+        return d >= start && d <= end;
+      })
+      .reduce((sum, [, p]) => sum + parseFloat(p), 0);
+
+    const growth = deposit > 0 ? (pProfit / deposit * 100) : 0;
+    const dd     = parseFloat(s.max_drawdown || s.drawdown || 0);
+    const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
+    const st = calcStats(tradeLog);
+
+    grandP   += pProfit;
+    totalDep += deposit;
+
+    rows += `<tr>
+      <td class="mono" style="font-size:11px;color:var(--text);font-weight:600;">${id}</td>
+      <td class="mono text-right ${clrCls(pProfit)}">${fmt(pProfit)}</td>
+      <td class="mono text-right ${clrCls(growth)}">${growth.toFixed(2)}%</td>
+      <td class="mono text-right" style="color:var(--cyan);">${st.winRate}%</td>
+      <td class="mono text-right" style="color:var(--cyan);">${st.profitFactor}</td>
+      <td class="mono text-right" style="color:${dd>20?'var(--red)':dd>10?'var(--orange)':'var(--green)'};">${dd.toFixed(2)}%</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--t);padding:20px">No data</td></tr>';
-  const gG=gD>0?gP/gD*100:0;
-  const fp=$('ft-p'); fp.textContent=sgn(gP)+fmt(gP); fp.className=clsc(gP);
-  const fg=$('ft-g'); fg.textContent=pct(gG); fg.className=clsc(gG);
-}
+  });
 
-// ── EMERGENCY ──
-async function sendEmergency(){
-  if(!confirm('⚠ SEND CLOSE ALL?\nThis signals all MT5 EAs to close positions immediately.'))return;
-  try{
-    await window.__set(window.__ref(window.__db,'commands/closeall'),{active:true,timestamp:Math.floor(Date.now()/1000),by:'dashboard'});
-    toast('🚨 CLOSE ALL sent to Firebase','var(--r)');
-  }catch(e){toast('Error: '+e.message,'var(--r)')}
-}
+  document.getElementById('period-table').innerHTML = rows;
 
-// ── COPY LINK ──
-function copyLink(id){
-  const url=location.origin+location.pathname.replace('index.html','public.html')+'?port='+encodeURIComponent(id);
-  navigator.clipboard.writeText(url).then(()=>toast('✓ Link copied for '+id)).catch(()=>prompt('Copy:',url));
-}
+  const gp = document.getElementById('grand-profit');
+  gp.textContent = fmt(grandP);
+  gp.className   = 'text-right mono ' + clrCls(grandP);
 
-// ── CLOCK ──
-setInterval(()=>{ const t=$('hdr-time');if(t)t.textContent=new Date().toLocaleTimeString('en-GB')},1000);
+  const gg = document.getElementById('grand-growth');
+  const tg = totalDep > 0 ? (grandP / totalDep * 100) : 0;
+  gg.textContent = tg.toFixed(2) + '%';
+  gg.className   = 'text-right mono ' + clrCls(tg);
+};
 
-// ── AUTO VELOCITY REFRESH ──
-setInterval(()=>{if(Object.keys(DB).length)renderVelocity(buildPorts())},30000);
+// ──────────────────────────────────────────
+// Public Link
+// ──────────────────────────────────────────
+window.copyPublicLink = function(portId) {
+  const url = location.origin + location.pathname.replace('index.html', 'public.html')
+            + '?port=' + encodeURIComponent(portId);
+  navigator.clipboard.writeText(url).then(() => {
+    showError('✓ คัดลอก public link แล้วครับ: ' + portId);
+    document.getElementById('error-box').style.background = '#0a1a0a';
+    document.getElementById('error-box').style.color = 'var(--green)';
+    document.getElementById('error-box').style.borderColor = 'var(--green)';
+  });
+};
 
-// ── DEFAULT PERIOD ──
-document.addEventListener('fb-ready',()=>{
-  const now=new Date(),s=new Date(now);s.setHours(0,0,0,0);
-  $('d-start').value=toDS(s);$('d-end').value=toDS(now);
-});
+// ──────────────────────────────────────────
+// Start
+// ──────────────────────────────────────────
+initListeners();
 </script>
 </body>
 </html>
