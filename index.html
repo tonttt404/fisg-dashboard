@@ -638,7 +638,7 @@ function buildPort(id, data) {
     id, bal, eq, dep, maxDD, curDD,
     broker:   s.broker   || '—',
     currency: s.currency || 'USC',
-    isOnline: ageMin >= 0 && ageMin < 2,
+    isOnline: ageMin > -5 && ageMin < 3,
     ageMin,
     history, trades,
     totalProfit, growth, winRate, pFactor, expectancy,
