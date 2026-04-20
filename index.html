@@ -1,702 +1,1067 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FISG Analytics Pro</title>
+<title>FISG · Quant Command Center</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Firebase SDK -->
+<!-- Firebase SDK (ESM) -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  window.__firebaseModules = { initializeApp, getDatabase, ref, onValue, get };
+  import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const FB_CFG = {
+    apiKey:            "AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
+    authDomain:        "fisg-analytics.firebaseapp.com",
+    databaseURL:       "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "fisg-analytics",
+    storageBucket:     "fisg-analytics.firebasestorage.app",
+    messagingSenderId: "78360571677",
+    appId:             "1:78360571677:web:04797d955a553df1b3fbf4"
+  };
+
+  const app = initializeApp(FB_CFG);
+  const db  = getDatabase(app);
+
+  // Expose to vanilla JS scope
+  window.__DB  = db;
+  window.__REF = ref;
+  window.__SET = set;
+  window.__OV  = onValue;
+
+  document.dispatchEvent(new Event('fb:ready'));
 </script>
 
 <style>
-  :root {
-    --bg:       #05070D;
-    --surface:  #0B0F1A;
-    --border:   rgba(0,242,255,0.12);
-    --cyan:     #00F2FF;
-    --green:    #00FF94;
-    --red:      #FF4560;
-    --orange:   #FFA500;
-    --text:     #C8D6E5;
-    --muted:    #4A5568;
-  }
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --bg0:   #020509;
+  --bg1:   #060A10;
+  --bg2:   #0A0F1C;
+  --bg3:   #0F1628;
+  --bg4:   #141D35;
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Space Grotesk', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-  }
-  .mono { font-family: 'JetBrains Mono', monospace; }
+  --c:     #00F5FF;   /* cyan primary    */
+  --g:     #00FF94;   /* green profit    */
+  --r:     #FF3B5C;   /* red loss        */
+  --o:     #FF9500;   /* orange warn     */
+  --y:     #FFD60A;   /* yellow accent   */
+  --p:     #BF5AF2;   /* purple special  */
 
-  /* Grid scanline overlay */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,242,255,0.012) 2px, rgba(0,242,255,0.012) 4px
-    );
-    pointer-events: none; z-index: 0;
-  }
+  --t1:    #C5D5E8;   /* text primary    */
+  --t2:    #7A90A8;   /* text secondary  */
+  --t3:    #3D5060;   /* text muted      */
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    position: relative;
-    overflow: hidden;
-  }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-    opacity: 0.4;
-  }
-  .card-accent { border-left: 2px solid var(--cyan); }
+  --b1:    rgba(0,245,255,.10);   /* border normal  */
+  --b2:    rgba(0,245,255,.18);   /* border hover   */
+  --b3:    rgba(0,245,255,.04);   /* border subtle  */
 
-  .badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 2px 10px; border-radius: 20px;
-    font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .badge-online  { background: rgba(0,255,148,0.1); color: var(--green); border: 1px solid rgba(0,255,148,0.3); }
-  .badge-offline { background: rgba(255,69,96,0.1);  color: var(--red);   border: 1px solid rgba(255,69,96,0.3); }
-  .badge-warn    { background: rgba(255,165,0,0.1);   color: var(--orange);border: 1px solid rgba(255,165,0,0.3); }
+  --sh-c:  0 0 24px rgba(0,245,255,.12);
+  --sh-g:  0 0 24px rgba(0,255,148,.12);
+  --sh-r:  0 0 24px rgba(255,59,92,.14);
+}
 
-  .stat-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; line-height: 1.1; }
+/* ═══════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
-  .plus  { color: var(--green); }
-  .minus { color: var(--red); }
-  .cyan  { color: var(--cyan); }
+body {
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--bg0);
+  color: var(--t1);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-  .tab-btn {
-    padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
-    background: transparent; color: var(--muted);
-  }
-  .tab-btn.active { background: rgba(0,242,255,0.1); color: var(--cyan); border-color: var(--border); }
-  .tab-btn:hover:not(.active) { color: var(--text); }
+/* scanline texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,.10) 3px, rgba(0,0,0,.10) 4px
+  );
+  pointer-events: none; z-index: 800;
+  mix-blend-mode: overlay;
+}
 
-  .port-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--cyan);
-    border-radius: 12px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s, box-shadow 0.3s;
-  }
-  .port-card:hover { box-shadow: 0 0 30px rgba(0,242,255,0.06); }
-  .port-card.danger { border-left-color: var(--red); }
-  .port-card.warn   { border-left-color: var(--orange); }
+/* ambient glow */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 65% 42% at 12% 8%,  rgba(0,245,255,.055) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 38% at 88% 88%, rgba(0,255,148,.035) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(191,90,242,.015) 0%, transparent 70%);
+}
 
-  /* Pulse dot */
-  .pulse-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 0 0 rgba(0,255,148,0.5);
-    animation: pulse 2s infinite;
-  }
-  .pulse-dot.offline { background: var(--muted); animation: none; }
-  @keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 rgba(0,255,148,0.5); }
-    70%  { box-shadow: 0 0 0 6px rgba(0,255,148,0); }
-    100% { box-shadow: 0 0 0 0 rgba(0,255,148,0); }
-  }
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+#app {
+  position: relative; z-index: 10;
+  max-width: 1640px; margin: 0 auto;
+  padding: 28px 20px 80px;
+}
 
-  /* Micro stat grid */
-  .micro-grid {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px; margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-  }
-  .micro-stat .label { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-  .micro-stat .val   { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 2px; }
+/* ═══════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════ */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--b1);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .25s, box-shadow .25s;
+}
+.card::before {
+  content: ''; position: absolute;
+  top: 0; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c), transparent);
+  opacity: .22;
+}
+.card:hover { border-color: var(--b2); }
 
-  /* Risk bar */
-  .risk-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 4px; margin-top: 4px; }
-  .risk-bar      { height: 4px; border-radius: 4px; transition: width 0.5s; }
+.card-cyan   { border-left: 2px solid var(--c); }
+.card-green  { border-left: 2px solid var(--g); }
+.card-red    { border-left: 2px solid var(--r); }
+.card-orange { border-left: 2px solid var(--o); }
+.card-purple { border-left: 2px solid var(--p); }
 
-  /* Table */
-  table { width: 100%; border-collapse: collapse; }
-  th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 0 12px; }
-  td { font-size: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0,242,255,0.05); }
-  tr:last-child td { border-bottom: none; }
-  tfoot td { font-weight: 700; padding-top: 14px; border-top: 2px solid var(--border); font-size: 13px; }
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════ */
+.syne { font-family: 'Syne', sans-serif; }
+.lbl  { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--t3); font-weight: 700; }
+.lbl2 { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--t2); font-weight: 600; }
 
-  /* Loader */
-  #loader {
-    position: fixed; inset: 0; z-index: 999;
-    background: var(--bg);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 16px;
-  }
-  .loader-ring {
-    width: 48px; height: 48px; border-radius: 50%;
-    border: 2px solid var(--border);
-    border-top-color: var(--cyan);
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+.v-xxl { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -.025em; }
+.v-xl  { font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -.02em;  }
+.v-lg  { font-size: 16px; font-weight: 700; line-height: 1; }
+.v-md  { font-size: 13px; font-weight: 600; }
+.v-sm  { font-size: 11px; font-weight: 600; }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.plus  { color: var(--g); }
+.minus { color: var(--r); }
+.cyan  { color: var(--c); }
+.muted { color: var(--t2); }
+.dim   { color: var(--t3); }
 
-  .section-title {
-    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--muted); font-weight: 600;
-  }
+/* ═══════════════════════════════════════════
+   PULSE DOT
+═══════════════════════════════════════════ */
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--g); flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(0,255,148,.5);
+  animation: pulse 2.8s ease infinite;
+}
+.dot.off { background: var(--t3); animation: none; box-shadow: none; }
+.dot.warn { background: var(--o); box-shadow: 0 0 0 0 rgba(255,149,0,.5); }
 
-  input[type="date"] {
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--cyan); padding: 5px 8px; border-radius: 6px;
-    font-size: 11px; font-family: 'JetBrains Mono', monospace;
-    outline: none;
-  }
-  input[type="date"]:focus { border-color: var(--cyan); }
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0,255,148,.55); }
+  60%  { box-shadow: 0 0 0 8px rgba(0,255,148,0);  }
+  100% { box-shadow: 0 0 0 0 rgba(0,255,148,0);    }
+}
 
-  .btn {
-    padding: 6px 16px; border-radius: 6px; font-size: 11px; font-weight: 700;
-    cursor: pointer; transition: all 0.2s; border: none;
-    font-family: 'Space Grotesk', sans-serif;
-  }
-  .btn-primary { background: var(--cyan); color: #000; }
-  .btn-primary:hover { background: #00d4e0; }
-  .btn-ghost { background: rgba(0,242,255,0.08); color: var(--cyan); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: rgba(0,242,255,0.15); }
+/* ═══════════════════════════════════════════
+   VELOCITY CARDS
+═══════════════════════════════════════════ */
+.vel-card {
+  background: linear-gradient(145deg, var(--bg2) 0%, var(--bg3) 100%);
+  border: 1px solid var(--b1);
+  border-radius: 14px;
+  padding: 22px 24px;
+  position: relative; overflow: hidden;
+  transition: border-color .2s;
+}
+.vel-card::after {
+  content: ''; position: absolute;
+  top: -40px; right: -40px;
+  width: 110px; height: 110px; border-radius: 50%;
+  background: rgba(0,245,255,.035);
+}
+.vel-card:hover { border-color: var(--b2); }
 
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  .fade-in { animation: fadeIn 0.4s ease forwards; }
+/* ═══════════════════════════════════════════
+   ACCORDION
+═══════════════════════════════════════════ */
+.acc-wrap { border-radius: 14px; overflow: visible; border: 1px solid var(--b1); background: var(--bg2); }
+
+.acc-hdr {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 22px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: background .18s, border-color .18s;
+  border-radius: 14px;
+}
+.acc-hdr:hover  { background: rgba(0,245,255,.025); }
+.acc-hdr.open   { border-bottom-color: var(--b1); border-radius: 14px 14px 0 0; background: rgba(0,245,255,.03); }
+
+.acc-arrow { margin-left: auto; font-size: 11px; color: var(--t3); transition: transform .22s; flex-shrink: 0; }
+.acc-hdr.open .acc-arrow { transform: rotate(180deg); }
+
+.acc-body { display: none; padding: 22px; }
+.acc-body.open { display: block; }
+
+/* ── CRITICAL Z-INDEX FIX ─────────────────
+   Chart canvas: z-index 1  (underneath)
+   Action buttons: z-index 20 (always on top)
+   This guarantees "Copy Public Link" is 100% clickable
+─────────────────────────────────────────── */
+.chart-zone {
+  position: relative;
+  z-index: 1;           /* chart lives here */
+  margin-bottom: 0;
+}
+.chart-zone .apexcharts-canvas { position: relative; z-index: 1; }
+
+.port-actions {
+  position: relative;
+  z-index: 20;          /* ALWAYS above chart canvas */
+  pointer-events: auto !important;
+  margin-top: 14px;
+  display: flex; gap: 8px;
+}
+.port-actions > * {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto !important;
+}
+
+/* ═══════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════ */
+.perf-table { width: 100%; border-collapse: collapse; }
+.perf-table th {
+  font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--t3); font-weight: 700;
+  padding: 0 14px 14px; text-align: right;
+  cursor: pointer; white-space: nowrap; user-select: none;
+}
+.perf-table th:first-child { text-align: left; }
+.perf-table th:hover { color: var(--c); }
+.perf-table th.sort-a::after { content: ' ▲'; color: var(--c); }
+.perf-table th.sort-d::after { content: ' ▼'; color: var(--c); }
+.perf-table td {
+  font-size: 11px; padding: 11px 14px;
+  border-bottom: 1px solid var(--b3);
+  text-align: right;
+}
+.perf-table td:first-child { text-align: left; }
+.perf-table tr:hover td { background: rgba(0,245,255,.018); }
+.perf-table tfoot td {
+  font-weight: 700; font-size: 12px;
+  padding-top: 16px;
+  border-top: 2px solid var(--b1); border-bottom: none;
+}
+
+/* ═══════════════════════════════════════════
+   BUTTONS & TABS
+═══════════════════════════════════════════ */
+.tab {
+  padding: 6px 14px; border-radius: 7px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  cursor: pointer; border: 1px solid transparent;
+  background: transparent; color: var(--t3);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all .15s;
+}
+.tab.active { background: rgba(0,245,255,.1); color: var(--c); border-color: var(--b1); }
+.tab:hover:not(.active) { color: var(--t1); }
+
+.btn {
+  padding: 8px 18px; border-radius: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  cursor: pointer; border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all .15s;
+}
+.btn-c  { background: var(--c); color: #000; }
+.btn-c:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-g  { background: rgba(0,255,148,.12); color: var(--g); border: 1px solid rgba(0,255,148,.25); }
+.btn-r  { background: rgba(255,59,92,.12);  color: var(--r); border: 1px solid rgba(255,59,92,.28); }
+.btn-r:hover { background: rgba(255,59,92,.22); }
+.btn-ghost { background: rgba(0,245,255,.08); color: var(--c); border: 1px solid var(--b1); }
+.btn-ghost:hover { background: rgba(0,245,255,.15); }
+.btn-dim  { background: rgba(255,255,255,.04); color: var(--t2); border: 1px solid var(--b1); }
+
+input[type="date"] {
+  background: var(--bg3); border: 1px solid var(--b1); color: var(--c);
+  padding: 7px 11px; border-radius: 8px;
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace; outline: none;
+}
+input[type="date"]:focus { border-color: var(--c); }
+
+/* ═══════════════════════════════════════════
+   RISK BAR
+═══════════════════════════════════════════ */
+.rbar-wrap { background: rgba(255,255,255,.06); border-radius: 4px; height: 3px; margin-top: 6px; }
+.rbar      { height: 3px; border-radius: 4px; transition: width .55s ease; }
+
+/* ═══════════════════════════════════════════
+   LOADER & TOAST
+═══════════════════════════════════════════ */
+#loader {
+  position: fixed; inset: 0; z-index: 9000;
+  background: var(--bg0);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px;
+}
+.spin {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid var(--b1); border-top-color: var(--c);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9500;
+  background: var(--bg3); border: 1px solid var(--b1); border-radius: 10px;
+  padding: 12px 20px; font-size: 11px; max-width: 320px;
+  transform: translateY(70px); opacity: 0;
+  transition: all .28s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   EMERGENCY BTN
+═══════════════════════════════════════════ */
+.emg {
+  padding: 9px 22px; border-radius: 9px; font-size: 10px; font-weight: 700;
+  letter-spacing: .08em; cursor: pointer;
+  background: linear-gradient(135deg, rgba(255,59,92,.15) 0%, rgba(255,59,92,.07) 100%);
+  border: 1px solid rgba(255,59,92,.32); color: var(--r);
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all .2s;
+}
+.emg:hover { background: rgba(255,59,92,.25); box-shadow: var(--sh-r); }
+
+/* ═══════════════════════════════════════════
+   SECTION HEADER
+═══════════════════════════════════════════ */
+.sec {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 18px;
+}
+.sec-line { flex: 1; height: 1px; background: var(--b1); }
+.sec-tag  { font-size: 9px; letter-spacing: .22em; text-transform: uppercase; color: var(--t3); font-weight: 700; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════
+   MICRO KV ROW
+═══════════════════════════════════════════ */
+.kv {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; border-bottom: 1px solid var(--b3);
+}
+.kv:last-child { border-bottom: none; }
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.fu   { animation: fadeUp .38s ease both; }
+.fd1  { animation-delay: .05s; }
+.fd2  { animation-delay: .10s; }
+.fd3  { animation-delay: .15s; }
+.fd4  { animation-delay: .20s; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--b1); border-radius: 2px; }
 </style>
 </head>
 <body>
 
-<!-- ============ LOADER ============ -->
+<!-- LOADER -->
 <div id="loader">
-  <div class="loader-ring"></div>
-  <p class="mono" style="font-size:11px;color:var(--muted);">CONNECTING TO FIREBASE...</p>
+  <div class="spin"></div>
+  <p style="font-size:10px;color:var(--t3);letter-spacing:.18em">INITIALISING FIREBASE...</p>
 </div>
 
-<!-- ============ ERROR BOX ============ -->
-<div id="error-box" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:999;
-  background:#1a0a0a;border:1px solid var(--red);color:var(--red);padding:12px 24px;border-radius:8px;font-size:12px;font-family:'JetBrains Mono',monospace;">
-</div>
+<!-- TOAST -->
+<div id="toast" id="toast"></div>
 
-<!-- ============ MAIN ============ -->
-<div id="app" style="display:none;" class="p-4 md:p-8 max-w-screen-2xl mx-auto space-y-6 relative z-10">
+<!-- ════════════════════════════════════════
+     APP
+════════════════════════════════════════ -->
+<div id="app" style="display:none">
 
-  <!-- Header -->
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <!-- ── HEADER ───────────────────────── -->
+  <header class="fu" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:14px">
     <div>
-      <h1 class="text-xl font-bold tracking-tight" style="color:var(--cyan);">FISG ANALYTICS <span style="color:var(--muted);font-weight:300;">PRO</span></h1>
-      <p class="section-title mt-1">FIREBASE REALTIME · <span id="port-count">0</span> ACTIVE PORTS</p>
+      <h1 class="syne" style="font-size:24px;font-weight:800;color:var(--c);letter-spacing:-.025em">
+        FISG <span style="color:var(--t3);font-weight:400;font-size:17px">QUANT</span>
+      </h1>
+      <p class="lbl" style="margin-top:5px">
+        Command Center &nbsp;·&nbsp;
+        <span id="hd-ports">—</span> ports &nbsp;·&nbsp;
+        <span id="hd-time">—</span>
+      </p>
     </div>
-    <div class="flex items-center gap-3">
-      <div class="pulse-dot" id="connection-dot"></div>
-      <span id="connection-text" class="section-title">LIVE</span>
-      <span id="last-refresh" class="mono" style="font-size:10px;color:var(--muted);">--:--:--</span>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="dot" id="live-dot"></div>
+        <span class="lbl" id="live-lbl">LIVE</span>
+      </div>
+      <button class="emg" onclick="doEmergency()">⚠ CLOSE ALL</button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       S1 · GRAND OVERVIEW
+  ══════════════════════════════════════ -->
+  <div class="sec fu fd1">
+    <span class="sec-tag">01 · Grand Overview</span>
+    <div class="sec-line"></div>
+  </div>
+
+  <div class="fu fd1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:32px">
+    <div class="card card-cyan" style="padding:20px 22px">
+      <p class="lbl">Total Equity</p>
+      <p class="v-xxl cyan" id="ov-eq" style="margin-top:8px">—</p>
+      <p class="lbl" id="ov-eq-sub" style="margin-top:5px;color:var(--t3)">USC</p>
+    </div>
+    <div class="card card-cyan" style="padding:20px 22px">
+      <p class="lbl">Total Balance</p>
+      <p class="v-xxl" id="ov-bal" style="margin-top:8px;color:var(--t1)">—</p>
+      <p class="lbl" style="margin-top:5px;color:var(--t3)">USC</p>
+    </div>
+    <div class="card card-cyan" style="padding:20px 22px">
+      <p class="lbl">Net Deposit</p>
+      <p class="v-xxl" id="ov-dep" style="margin-top:8px;color:var(--t2)">—</p>
+      <p class="lbl" id="ov-dep-sub" style="margin-top:5px;color:var(--t3)">sum of DEAL_TYPE_BALANCE</p>
+    </div>
+    <div class="card card-cyan" style="padding:20px 22px">
+      <p class="lbl">Grand Profit (USC)</p>
+      <p class="v-xxl" id="ov-pnl" style="margin-top:8px">—</p>
+      <p class="lbl" style="margin-top:5px;color:var(--t3)">balance − deposit</p>
+    </div>
+    <div class="card card-green" style="padding:20px 22px">
+      <p class="lbl">Portfolio Growth</p>
+      <p class="v-xxl" id="ov-gr" style="margin-top:8px">—</p>
+      <p class="lbl" style="margin-top:5px;color:var(--t3)">profit / deposit × 100</p>
+    </div>
+    <div class="card card-red" style="padding:20px 22px">
+      <p class="lbl">Overall Max DD</p>
+      <p class="v-xxl" id="ov-dd" style="margin-top:8px;color:var(--o)">—</p>
+      <p class="lbl" id="ov-dd-sub" style="margin-top:5px;color:var(--t3)">avg across ports</p>
     </div>
   </div>
 
-  <!-- Summary Cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="card card-accent p-5">
-      <p class="stat-label">Total Equity</p>
-      <p class="stat-value cyan mt-2" id="total-equity">0.00</p>
+  <!-- ══════════════════════════════════════
+       S2 · VELOCITY & MOMENTUM
+  ══════════════════════════════════════ -->
+  <div class="sec fu fd2">
+    <span class="sec-tag">02 · Velocity &amp; Momentum</span>
+    <div class="sec-line"></div>
+  </div>
+
+  <div class="fu fd2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:13px;margin-bottom:32px">
+    <div class="vel-card">
+      <p class="lbl">Last 1 Hour</p>
+      <p class="v-xl" id="vel-1h" style="margin-top:10px">—</p>
+      <p class="lbl" id="vel-1h-n" style="margin-top:5px">— ports active</p>
     </div>
-    <div class="card card-accent p-5">
-      <p class="stat-label">Total Net Profit</p>
-      <p class="stat-value mt-2" id="total-profit">0.00</p>
+    <div class="vel-card">
+      <p class="lbl">Last 6 Hours</p>
+      <p class="v-xl" id="vel-6h" style="margin-top:10px">—</p>
+      <p class="lbl" id="vel-6h-n" style="margin-top:5px">— ports active</p>
     </div>
-    <div class="card card-accent p-5">
-      <p class="stat-label">Total Deposits</p>
-      <p class="stat-value mt-2" style="color:var(--text)" id="total-deposit">0.00</p>
+    <div class="vel-card">
+      <p class="lbl">Today (from 00:00)</p>
+      <p class="v-xl" id="vel-td" style="margin-top:10px">—</p>
+      <p class="lbl" id="vel-td-n" style="margin-top:5px">— ports active</p>
     </div>
-    <div class="card card-accent p-5">
-      <p class="stat-label">Avg Max Drawdown</p>
-      <p class="stat-value mt-2" style="color:var(--orange)" id="avg-dd">0.00%</p>
+    <div class="vel-card" style="background:linear-gradient(145deg,rgba(255,59,92,.055),var(--bg2));border-color:rgba(255,59,92,.18)">
+      <p class="lbl" style="color:rgba(255,59,92,.7)">DD Alert</p>
+      <p class="v-xl" id="vel-dd" style="margin-top:10px;color:var(--o)">—</p>
+      <p class="lbl" id="vel-dd-n" style="margin-top:5px">— ports &gt;10% DD</p>
     </div>
   </div>
 
-  <!-- Port Cards Grid -->
-  <div>
-    <p class="section-title mb-4">PORTFOLIO OVERVIEW</p>
-    <div id="port-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+  <!-- ══════════════════════════════════════
+       S3 · DEEP-DIVE PORTFOLIOS (ACCORDION)
+  ══════════════════════════════════════ -->
+  <div class="sec fu fd3">
+    <span class="sec-tag">03 · Deep-Dive Portfolios</span>
+    <div class="sec-line"></div>
+    <button class="tab" onclick="allAcc(true)"  style="white-space:nowrap">Expand All</button>
+    <button class="tab" onclick="allAcc(false)" style="white-space:nowrap;margin-left:4px">Collapse All</button>
   </div>
 
-  <!-- Performance Table -->
-  <div class="card p-6">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-      <p class="section-title">PERFORMANCE GRID</p>
-      <div class="flex flex-wrap items-center gap-2">
-        <button class="tab-btn active" onclick="setPeriod('today')">Today</button>
-        <button class="tab-btn" onclick="setPeriod('week')">Week</button>
-        <button class="tab-btn" onclick="setPeriod('month')">Month</button>
-        <button class="tab-btn" onclick="setPeriod('year')">Year</button>
-        <input type="date" id="date-start">
-        <span style="color:var(--muted);font-size:11px;">→</span>
-        <input type="date" id="date-end">
-        <button class="btn btn-primary" onclick="calculateCustomProfit()">คำนวณ</button>
+  <div id="acc-list" class="fu fd3" style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px"></div>
+
+  <!-- ══════════════════════════════════════
+       S4 · PERFORMANCE GRID
+  ══════════════════════════════════════ -->
+  <div class="sec fu fd4">
+    <span class="sec-tag">04 · Performance Grid</span>
+    <div class="sec-line"></div>
+  </div>
+
+  <div class="card fu fd4" style="padding:26px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:22px">
+      <button class="tab active" onclick="setPeriod('today',this)">Today</button>
+      <button class="tab" onclick="setPeriod('week',this)">Week</button>
+      <button class="tab" onclick="setPeriod('month',this)">Month</button>
+      <button class="tab" onclick="setPeriod('year',this)">Year</button>
+      <button class="tab" onclick="setPeriod('all',this)">All Time</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="date" id="d-start">
+        <span style="color:var(--t3);font-size:11px">→</span>
+        <input type="date" id="d-end">
+        <button class="btn btn-c" onclick="calcTable()">GO</button>
       </div>
     </div>
-    <div class="overflow-x-auto">
-      <table>
+    <div style="overflow-x:auto">
+      <table class="perf-table">
         <thead>
           <tr>
-            <th class="text-left">Port ID</th>
-            <th class="text-right">Profit</th>
-            <th class="text-right">Growth %</th>
-            <th class="text-right">Win Rate</th>
-            <th class="text-right">Profit Factor</th>
-            <th class="text-right">Max DD</th>
+            <th onclick="sortBy('name')"    style="text-align:left">Port ID</th>
+            <th onclick="sortBy('profit')"  >Profit (USC)</th>
+            <th onclick="sortBy('growth')"  >Growth %</th>
+            <th onclick="sortBy('winRate')" >Win Rate</th>
+            <th onclick="sortBy('pf')"      >Profit Factor</th>
+            <th onclick="sortBy('dd')"      >Max DD</th>
+            <th onclick="sortBy('online')"  >Status</th>
           </tr>
         </thead>
-        <tbody id="period-table"></tbody>
+        <tbody id="t-body"></tbody>
         <tfoot>
           <tr>
-            <td style="color:var(--cyan);">GRAND TOTAL</td>
-            <td class="text-right mono" id="grand-profit">—</td>
-            <td class="text-right mono" id="grand-growth">—</td>
-            <td class="text-right" colspan="3"></td>
+            <td style="text-align:left;color:var(--c)">GRAND TOTAL</td>
+            <td id="ft-p">—</td>
+            <td id="ft-g">—</td>
+            <td colspan="4"></td>
           </tr>
         </tfoot>
       </table>
     </div>
   </div>
 
+</div><!-- /app -->
+
+<!-- ════════════════════════════════════════
+     VANILLA JS (runs after Firebase ESM loads)
+════════════════════════════════════════ -->
+<script>
+/* ── UTILS ─────────────────────────────── */
+const $  = id => document.getElementById(id);
+const fmt = (v, d=2) => parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const sgn = v => parseFloat(v||0) >= 0 ? '+' : '';
+const clc = v => parseFloat(v||0) >= 0 ? 'plus' : 'minus';
+const pct = v => (parseFloat(v||0)>=0?'+':'')+parseFloat(v||0).toFixed(2)+'%';
+
+function toDS(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parsDS(s, end=false) {
+  if (!s) return end ? Date.now() : 0;
+  const [y,m,d] = s.split('-').map(Number);
+  return end ? new Date(y,m-1,d,23,59,59,999).getTime()
+             : new Date(y,m-1,d,0,0,0,0).getTime();
+}
+function toast(msg, col='var(--c)') {
+  const t = $('toast');
+  t.textContent = msg; t.style.color = col;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 3400);
+}
+
+/* ── STATE ──────────────────────────────── */
+let RAW = {};           // raw Firebase snapshot  {portId: {status, daily_history, trade_log, equity_log}}
+let charts = {};        // ApexCharts instances    {portId: instance}
+let tableRows = [];     // computed table rows
+let sortCol = 'profit', sortDir = -1;
+
+/* ── STRICT MATH ────────────────────────────
+   Net Deposit  = sum of ALL DEAL_TYPE_BALANCE (already done in MQ5, stored as s.net_deposit)
+   Trade Profit = DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION  (stored in trade_log entries)
+   Growth %     = (Total Trade Profit / Net Deposit) * 100
+   Profit Factor= Gross Profit / |Gross Loss|
+   Win Rate     = (Winning Trades / Total Trades) * 100
+──────────────────────────────────────────── */
+function buildPort(id, data) {
+  const s   = data.status || {};
+  const bal = +s.balance      || 0;
+  const eq  = +s.equity       || 0;
+  const dep = +s.net_deposit  || 0;   // DEAL_TYPE_BALANCE sum (from MQ5)
+  const maxDD  = +s.max_drawdown || +s.drawdown || 0;
+  const curDD  = +s.drawdown || 0;
+  const lastUp = s.last_update ? +s.last_update * 1000 : 0;
+  const ageMin = lastUp ? (Date.now() - lastUp) / 60000 : 9999;
+
+  // daily_history: { "unix_sec": profit_number }
+  const history = Object.entries(data.daily_history || {})
+    .map(([ts, p]) => ({ d: +ts * 1000, p: +p }))
+    .sort((a, b) => a.d - b.d);
+
+  // trade_log: { pushKey: { profit, time } }
+  // profit field = DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION (MQ5 computes this)
+  const trades = data.trade_log ? Object.values(data.trade_log) : [];
+  const wTrades = trades.filter(t => +t.profit > 0);
+  const lTrades = trades.filter(t => +t.profit < 0);
+  const grossW  = wTrades.reduce((a, t) => a + (+t.profit), 0);
+  const grossL  = lTrades.reduce((a, t) => a + Math.abs(+t.profit), 0);
+  const nTotal  = wTrades.length + lTrades.length;
+
+  // Net Profit = Balance - Net Deposit
+  const totalProfit = bal - dep;
+  // Growth % = Total Trade Profit / Net Deposit * 100  (division-by-zero safe)
+  const growth   = dep > 0 ? (totalProfit / dep * 100) : 0;
+  // Win Rate = Winning / Total * 100
+  const winRate  = nTotal > 0 ? (wTrades.length / nTotal * 100) : 0;
+  // Profit Factor = Gross Profit / |Gross Loss|
+  const pFactor  = grossL > 0 ? (grossW / grossL) : (grossW > 0 ? Infinity : 0);
+  // Expectancy
+  const avgW = wTrades.length > 0 ? grossW / wTrades.length : 0;
+  const avgL = lTrades.length > 0 ? grossL / lTrades.length : 0;
+  const expectancy = nTotal > 0 ? ((winRate/100)*avgW) - ((1-(winRate/100))*avgL) : 0;
+
+  return {
+    id, bal, eq, dep, maxDD, curDD,
+    broker:   s.broker   || '—',
+    currency: s.currency || 'USC',
+    isOnline: ageMin < 15,
+    ageMin,
+    history, trades,
+    totalProfit, growth, winRate, pFactor, expectancy,
+    wins: wTrades.length, losses: lTrades.length, nTotal,
+    grossW, grossL,
+    openTrades: Array.isArray(s.open_trades) ? s.open_trades : [],
+  };
+}
+
+function buildPorts() {
+  return Object.entries(RAW).map(([id, data]) => buildPort(id, data));
+}
+
+/* ── FIREBASE BOOT ──────────────────────── */
+function boot() {
+  const db = window.__DB, ref = window.__REF, onValue = window.__OV;
+  onValue(ref(db, 'ports'), snap => {
+    RAW = snap.val() || {};
+    renderAll();
+    $('loader').style.display = 'none';
+    $('app').style.display = 'block';
+  }, err => {
+    $('loader').innerHTML = `<p style="color:var(--r);font-size:12px">Firebase: ${err.message}</p>`;
+  });
+}
+if (window.__DB) boot();
+else document.addEventListener('fb:ready', boot);
+
+/* ── RENDER ALL ─────────────────────────── */
+function renderAll() {
+  const ports = buildPorts();
+  renderOverview(ports);
+  renderVelocity(ports);
+  renderAccordions(ports);
+  calcTable();
+  updateClock();
+}
+
+/* ── S1: OVERVIEW ───────────────────────── */
+function renderOverview(ports) {
+  const tEq  = ports.reduce((a,p) => a + p.eq,  0);
+  const tBal = ports.reduce((a,p) => a + p.bal, 0);
+  const tDep = ports.reduce((a,p) => a + p.dep, 0);
+  const tP   = tBal - tDep;                            // Grand Profit
+  const gr   = tDep > 0 ? (tP / tDep * 100) : 0;      // Growth %
+  const avgDD= ports.length ? ports.reduce((a,p) => a + p.maxDD, 0) / ports.length : 0;
+  const online = ports.filter(p => p.isOnline).length;
+
+  $('ov-eq').textContent  = fmt(tEq);
+  $('ov-bal').textContent = fmt(tBal);
+  $('ov-dep').textContent = fmt(tDep);
+
+  const pnlEl = $('ov-pnl');
+  pnlEl.textContent = sgn(tP) + fmt(tP);
+  pnlEl.className   = 'v-xxl ' + clc(tP);
+
+  const grEl = $('ov-gr');
+  grEl.textContent = pct(gr);
+  grEl.className   = 'v-xxl ' + clc(gr);
+
+  const ddEl = $('ov-dd');
+  ddEl.textContent  = fmt(avgDD) + '%';
+  ddEl.style.color  = avgDD > 20 ? 'var(--r)' : avgDD > 10 ? 'var(--o)' : 'var(--g)';
+
+  $('hd-ports').textContent = online + '/' + ports.length;
+  $('live-dot').className = 'dot' + (online === 0 ? ' off' : '');
+}
+
+/* ── S2: VELOCITY (exact JS timestamps) ─── */
+function renderVelocity(ports) {
+  const now    = Date.now();
+  const ms1h   = now - 3_600_000;
+  const ms6h   = now - 21_600_000;
+  const tod    = new Date(); tod.setHours(0,0,0,0);
+  const msTod  = tod.getTime();
+
+  let p1h=0, p6h=0, ptd=0, a1h=0, a6h=0, atd=0, ddN=0, ddS=0;
+
+  ports.forEach(p => {
+    // Use trade_log timestamps (stored as Unix seconds by MQ5)
+    const trades1h  = p.trades.filter(t => +t.time * 1000 >= ms1h);
+    const trades6h  = p.trades.filter(t => +t.time * 1000 >= ms6h);
+    const tradesTd  = p.trades.filter(t => +t.time * 1000 >= msTod);
+
+    const s1h = trades1h.reduce((a,t) => a + (+t.profit), 0);
+    const s6h = trades6h.reduce((a,t) => a + (+t.profit), 0);
+    const std = tradesTd.reduce((a,t) => a + (+t.profit), 0);
+
+    p1h += s1h; p6h += s6h; ptd += std;
+    if (trades1h.length)  a1h++;
+    if (trades6h.length)  a6h++;
+    if (tradesTd.length)  atd++;
+    if (p.maxDD > 10) { ddN++; ddS += p.maxDD; }
+  });
+
+  function sv(elId, subId, val, n) {
+    const el = $(elId);
+    el.textContent = sgn(val) + fmt(val);
+    el.className   = 'v-xl ' + clc(val);
+    $(subId).textContent = n + ' port' + (n !== 1 ? 's' : '') + ' active';
+  }
+  sv('vel-1h', 'vel-1h-n', p1h, a1h);
+  sv('vel-6h', 'vel-6h-n', p6h, a6h);
+  sv('vel-td', 'vel-td-n', ptd, atd);
+
+  $('vel-dd').textContent   = ddN > 0 ? fmt(ddS / ddN) + '% avg' : 'All Clear';
+  $('vel-dd').style.color   = ddN > 0 ? 'var(--r)' : 'var(--g)';
+  $('vel-dd-n').textContent = ddN + ' port' + (ddN !== 1 ? 's' : '') + ' >10% DD';
+}
+
+/* ── S3: ACCORDIONS ─────────────────────── */
+function renderAccordions(ports) {
+  const list = $('acc-list');
+  // Preserve open state across re-renders
+  const wasOpen = {};
+  list.querySelectorAll('.acc-hdr.open').forEach(h => { wasOpen[h.dataset.id] = true; });
+  list.innerHTML = '';
+
+  ports.forEach(p => {
+    const isOpen = !!wasOpen[p.id];
+    const sid    = 'acc-' + p.id.replace(/\W/g, '_');
+    const ddC    = p.maxDD > 20 ? 'var(--r)' : p.maxDD > 10 ? 'var(--o)' : 'var(--g)';
+    const pfStr  = p.pFactor === Infinity ? '∞' : p.pFactor.toFixed(2);
+    const openFP = p.openTrades.reduce((a, t) => a + (+t.profit || 0), 0);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'acc-wrap';
+
+    wrap.innerHTML = `
+<!-- HEADER -->
+<div class="acc-hdr${isOpen?' open':''}" data-id="${p.id}" onclick="togAcc(this)">
+  <div class="dot${p.isOnline?'':' off'}"></div>
+  <div style="min-width:0">
+    <p class="v-sm cyan" style="letter-spacing:.05em">${p.id}</p>
+    <p class="lbl" style="margin-top:3px">${p.broker} · ${p.currency}</p>
+  </div>
+  <div style="margin-left:auto;text-align:right;margin-right:14px;flex-shrink:0">
+    <p class="v-sm ${clc(p.totalProfit)}">${sgn(p.totalProfit)}${fmt(p.totalProfit)}</p>
+    <p class="lbl" style="margin-top:3px">${pct(p.growth)} growth</p>
+  </div>
+  <span style="font-size:9px;color:var(--t3);margin-right:10px;flex-shrink:0">
+    ${p.isOnline ? Math.round(p.ageMin)+'m ago' : 'OFFLINE'}
+  </span>
+  <span class="acc-arrow">▼</span>
 </div>
 
-<script type="module">
-// ──────────────────────────────────────────
-// CONFIG — แก้ตรงนี้
-// ──────────────────────────────────────────
-// ──────────────────────────────────────────
-// Firebase Init
-// ──────────────────────────────────────────
-const { initializeApp, getDatabase, ref, onValue, get } = window.__firebaseModules;
+<!-- BODY -->
+<div class="acc-body${isOpen?' open':''}" id="${sid}">
 
-const app = initializeApp({
-  apiKey:            "AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
-  authDomain:        "fisg-analytics.firebaseapp.com",
-  databaseURL:       "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:         "fisg-analytics",
-  storageBucket:     "fisg-analytics.firebasestorage.app",
-  messagingSenderId: "78360571677",
-  appId:             "1:78360571677:web:04797d955a553df1b3fbf4"
-});
-const db = getDatabase(app);
+  <!-- financials + performance -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+    <div>
+      <p class="lbl2" style="margin-bottom:10px">Financials</p>
+      ${kv('Balance',     fmt(p.bal),                         'var(--t1)')}
+      ${kv('Equity',      fmt(p.eq),                          'var(--c)')}
+      ${kv('Net Deposit', fmt(p.dep),                         'var(--t2)')}
+      ${kv('Net Profit',  sgn(p.totalProfit)+fmt(p.totalProfit), p.totalProfit>=0?'var(--g)':'var(--r)')}
+      ${kv('Growth',      pct(p.growth),                      p.growth>=0?'var(--g)':'var(--r)')}
+    </div>
+    <div>
+      <p class="lbl2" style="margin-bottom:10px">Performance</p>
+      ${kv('Win Rate',       p.winRate.toFixed(1)+'%',   p.winRate>=50?'var(--g)':'var(--r)')}
+      ${kv('Profit Factor',  pfStr,                       'var(--c)')}
+      ${kv('Expectancy',     sgn(p.expectancy)+fmt(p.expectancy), p.expectancy>=0?'var(--g)':'var(--r)')}
+      ${kv('Wins / Losses',  `<span class="plus">${p.wins}</span> / <span class="minus">${p.losses}</span>`, '')}
+      ${kv('Max DD',         p.maxDD.toFixed(2)+'%',     ddC)}
+      <div class="rbar-wrap"><div class="rbar" style="width:${Math.min(p.maxDD,100)}%;background:${ddC}"></div></div>
+    </div>
+  </div>
 
-// ──────────────────────────────────────────
-// State
-// ──────────────────────────────────────────
-let globalPorts = {};
-let charts      = {};
+  ${p.openTrades.length ? `
+  <!-- open positions -->
+  <div style="margin-bottom:18px;padding:14px 16px;background:var(--bg3);border-radius:10px;border:1px solid var(--b1)">
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+      <p class="lbl2">Open Positions (${p.openTrades.length})</p>
+      <p class="v-sm ${clc(openFP)}">${sgn(openFP)}${fmt(openFP)}</p>
+    </div>
+    ${p.openTrades.map(t => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--b3);font-size:10px">
+      <span style="color:${t.type==='BUY'?'var(--g)':'var(--r)'};font-weight:700;width:36px">${t.type}</span>
+      <span style="color:var(--c)">${t.sym}</span>
+      <span style="color:var(--t2)">${t.lots}L</span>
+      <span class="${clc(t.profit)}">${sgn(t.profit)}${fmt(t.profit)}</span>
+    </div>`).join('')}
+  </div>` : ''}
 
-const fmt    = v => parseFloat(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const clrCls = v => parseFloat(v) >= 0 ? 'plus' : 'minus';
+  <!-- CHART ZONE — z-index:1, isolated below buttons -->
+  <div class="chart-zone">
+    <p class="lbl" style="margin-bottom:9px;color:var(--t2)">Equity Curve (% Growth from Deposit)</p>
+    <div id="ch-${p.id.replace(/\W/g,'_')}"
+         style="height:160px;position:relative;z-index:1;pointer-events:auto"></div>
+  </div>
 
-function showError(msg) {
-  const el = document.getElementById('error-box');
-  el.textContent = '⚠ ' + msg;
-  el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 6000);
+  <!-- PORT ACTIONS — z-index:20 ALWAYS above chart canvas -->
+  <div class="port-actions">
+    <button class="btn btn-ghost" onclick="copyLink('${p.id}')">
+      🔗 Copy Public Link
+    </button>
+    <button class="btn btn-dim" onclick="redraw('${p.id}')">↻</button>
+  </div>
+
+</div>`;
+
+    list.appendChild(wrap);
+    if (isOpen) setTimeout(() => drawChart(p), 80);
+  });
 }
 
-// ──────────────────────────────────────────
-// Firebase Listener — realtime
-// ──────────────────────────────────────────
-function initListeners() {
-  const portsRef = ref(db, 'ports');
-  onValue(portsRef, snapshot => {
-    const data = snapshot.val();
-    if (!data) {
-      document.getElementById('loader').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      document.getElementById('port-grid').innerHTML =
-        '<p style="color:var(--muted);font-size:12px;">ยังไม่มีข้อมูล — รอให้ EA ส่งข้อมูลมาครับ</p>';
-      return;
+function kv(label, val, col) {
+  return `<div class="kv">
+    <span class="lbl">${label}</span>
+    <span style="font-size:11px;font-weight:600;color:${col||'var(--t1)'}">${val}</span>
+  </div>`;
+}
+
+function togAcc(hdr) {
+  const sid  = 'acc-' + hdr.dataset.id.replace(/\W/g,'_');
+  const body = $(sid);
+  const op   = hdr.classList.contains('open');
+  hdr.classList.toggle('open', !op);
+  body.classList.toggle('open', !op);
+  if (!op) {
+    const p = buildPorts().find(x => x.id === hdr.dataset.id);
+    if (p) setTimeout(() => drawChart(p), 65);
+  }
+}
+
+function allAcc(open) {
+  document.querySelectorAll('.acc-hdr').forEach(hdr => {
+    const sid  = 'acc-' + hdr.dataset.id.replace(/\W/g,'_');
+    const body = $(sid);
+    hdr.classList.toggle('open', open);
+    body.classList.toggle('open', open);
+    if (open) {
+      const p = buildPorts().find(x => x.id === hdr.dataset.id);
+      if (p) setTimeout(() => drawChart(p), 65);
     }
-    globalPorts = data;
-    renderDashboard(data);
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
-  }, err => {
-    document.getElementById('loader').style.display = 'none';
-    showError('Firebase error: ' + err.message);
   });
 }
 
-// ──────────────────────────────────────────
-// Render Dashboard
-// ──────────────────────────────────────────
-function renderDashboard(ports) {
-  let totalEquity = 0, totalDeposit = 0, totalProfit = 0, ddSum = 0, portCount = 0;
+/* ── APEX CHART ─────────────────────────── */
+function drawChart(p) {
+  const cid = 'ch-' + p.id.replace(/\W/g,'_');
+  const el  = $(cid);
+  if (!el) return;
 
-  const portArray = Object.entries(ports).map(([id, data]) => {
-    const s = data.status || {};
-    const b = parseFloat(s.balance  || 0);
-    const e = parseFloat(s.equity   || 0);
-    const d = parseFloat(s.net_deposit || 0);
-    const dd= parseFloat(s.max_drawdown || s.drawdown || 0);
-
-    totalEquity  += e;
-    totalDeposit += d;
-    totalProfit  += (b - d);
-    ddSum        += dd;
-    portCount++;
-
-    // Build history array from daily_history object
-    const dailyRaw = data.daily_history || {};
-    const history  = Object.entries(dailyRaw)
-      .map(([ts, p]) => ({ d: parseInt(ts) * 1000, p: parseFloat(p) }))
-      .sort((a, b) => a.d - b.d);
-
-    // Trade log for stats
-    const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
-    const stats    = calcStats(tradeLog);
-
-    // Last update age
-    const lastUpdate = s.last_update ? parseInt(s.last_update) * 1000 : 0;
-    const ageMin     = lastUpdate ? (Date.now() - lastUpdate) / 60000 : 999;
-    const isOnline   = ageMin < 15;
-
-    return { id, balance: b, equity: e, deposit: d, dd, max_dd: dd,
-             wins: s.wins || 0, losses: s.losses || 0,
-             open_trades: s.open_trades || [],
-             broker: s.broker || '', currency: s.currency || 'USD',
-             history, stats, isOnline, ageMin };
-  });
-
-  // Summaries
-  document.getElementById('total-equity').textContent  = fmt(totalEquity);
-  document.getElementById('total-deposit').textContent = fmt(totalDeposit);
-  document.getElementById('port-count').textContent    = portCount;
-
-  const tp = document.getElementById('total-profit');
-  tp.textContent  = fmt(totalProfit);
-  tp.className    = 'stat-value mt-2 ' + clrCls(totalProfit);
-
-  const avgDD = portCount ? ddSum / portCount : 0;
-  document.getElementById('avg-dd').textContent = avgDD.toFixed(2) + '%';
-  document.getElementById('avg-dd').style.color =
-    avgDD > 20 ? 'var(--red)' : avgDD > 10 ? 'var(--orange)' : 'var(--green)';
-
-  // Port cards
-  const grid = document.getElementById('port-grid');
-  grid.innerHTML = '';
-
-  portArray.forEach(p => {
-    const totalP  = p.balance - p.deposit;
-    const growth  = p.deposit > 0 ? (totalP / p.deposit * 100) : 0;
-    const ddClass = p.dd > 20 ? 'danger' : p.dd > 10 ? 'warn' : '';
-    const openCount = Array.isArray(p.open_trades) ? p.open_trades.length : 0;
-    const openProfit = Array.isArray(p.open_trades)
-      ? p.open_trades.reduce((s, t) => s + parseFloat(t.profit || 0), 0) : 0;
-
-    const card = document.createElement('div');
-    card.className = `port-card ${ddClass} fade-in`;
-    card.id = 'card-' + p.id.replace(/\W/g, '');
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <div class="pulse-dot ${p.isOnline ? '' : 'offline'}"></div>
-            <span style="font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.05em;">${p.id}</span>
-          </div>
-          <span style="font-size:10px;color:var(--muted);">${p.broker || '—'} · ${p.currency}</span>
-        </div>
-        <div style="text-align:right;">
-          <div class="badge ${p.isOnline ? 'badge-online' : 'badge-offline'}">
-            ${p.isOnline ? '● ONLINE' : '○ OFFLINE'}
-          </div>
-          <p style="font-size:9px;color:var(--muted);margin-top:4px;">${p.isOnline ? Math.round(p.ageMin) + 'm ago' : 'last seen ' + Math.round(p.ageMin) + 'm ago'}</p>
-        </div>
-      </div>
-
-      <!-- Equity Chart -->
-      <div id="chart-${p.id.replace(/\W/g,'')}" style="height:100px;margin-bottom:12px;"></div>
-
-      <!-- Main stats -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-        <div>
-          <p class="stat-label">Balance</p>
-          <p class="mono" style="font-size:16px;font-weight:700;color:var(--text);margin-top:2px;">${fmt(p.balance)}</p>
-        </div>
-        <div style="text-align:right;">
-          <p class="stat-label">Equity</p>
-          <p class="mono" style="font-size:16px;font-weight:700;color:var(--cyan);margin-top:2px;">${fmt(p.equity)}</p>
-        </div>
-        <div>
-          <p class="stat-label">Net Profit</p>
-          <p class="mono ${clrCls(totalP)}" style="font-size:14px;font-weight:700;margin-top:2px;">${fmt(totalP)}</p>
-        </div>
-        <div style="text-align:right;">
-          <p class="stat-label">Growth</p>
-          <p class="mono ${clrCls(growth)}" style="font-size:14px;font-weight:700;margin-top:2px;">${growth.toFixed(2)}%</p>
-        </div>
-      </div>
-
-      <!-- Drawdown bar -->
-      <div style="margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span class="stat-label">Max Drawdown</span>
-          <span class="mono" style="font-size:10px;color:${p.dd>20?'var(--red)':p.dd>10?'var(--orange)':'var(--green)'};">${p.dd.toFixed(2)}%</span>
-        </div>
-        <div class="risk-bar-wrap">
-          <div class="risk-bar" style="width:${Math.min(p.dd,100)}%;background:${p.dd>20?'var(--red)':p.dd>10?'var(--orange)':'var(--green)'};"></div>
-        </div>
-      </div>
-
-      <!-- Micro stats -->
-      <div class="micro-grid">
-        <div class="micro-stat">
-          <div class="label">Win Rate</div>
-          <div class="val ${clrCls(p.stats.winRate - 50)}">${p.stats.winRate}%</div>
-        </div>
-        <div class="micro-stat">
-          <div class="label">Profit Factor</div>
-          <div class="val" style="color:var(--cyan);">${p.stats.profitFactor}</div>
-        </div>
-        <div class="micro-stat">
-          <div class="label">Expectancy</div>
-          <div class="val ${clrCls(p.stats.expectancy)}">${fmt(p.stats.expectancy)}</div>
-        </div>
-        <div class="micro-stat">
-          <div class="label">Wins / Losses</div>
-          <div class="val"><span class="plus">${p.wins}</span> / <span class="minus">${p.losses}</span></div>
-        </div>
-        <div class="micro-stat">
-          <div class="label">Open Trades</div>
-          <div class="val" style="color:var(--cyan);">${openCount}</div>
-        </div>
-        <div class="micro-stat">
-          <div class="label">Float P/L</div>
-          <div class="val ${clrCls(openProfit)}">${fmt(openProfit)}</div>
-        </div>
-      </div>
-
-      <!-- Open trades detail -->
-      ${openCount > 0 ? `
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-        <p class="stat-label" style="margin-bottom:6px;">OPEN POSITIONS</p>
-        ${(Array.isArray(p.open_trades) ? p.open_trades : []).map(t => `
-          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px;">
-            <span style="color:${t.type==='BUY'?'var(--green)':'var(--red)'};">${t.type}</span>
-            <span class="mono" style="color:var(--text);">${t.sym}</span>
-            <span class="mono" style="color:var(--muted);">${t.lots}L</span>
-            <span class="mono ${clrCls(t.profit)}">${fmt(t.profit)}</span>
-          </div>
-        `).join('')}
-      </div>` : ''}
-
-      <!-- Share button -->
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
-        <button class="btn btn-ghost" style="flex:1;font-size:10px;" onclick="copyPublicLink('${p.id}')">
-          🔗 Copy Public Link
-        </button>
-      </div>
-    `;
-    grid.appendChild(card);
-
-    // Draw chart after DOM insert
-    setTimeout(() => drawEquityChart(p), 50);
-  });
-
-  // Update performance table
-  if(!document.getElementById('date-start').value) setPeriod('month');
-  calculateCustomProfit();
-}
-
-// ──────────────────────────────────────────
-// Chart
-// ──────────────────────────────────────────
-function drawEquityChart(p) {
-  const containerId = 'chart-' + p.id.replace(/\W/g, '');
-  const container   = document.getElementById(containerId);
-  if (!container || !p.history.length) {
-    if(container) container.innerHTML =
-      '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;">ข้อมูลไม่เพียงพอ</div>';
+  if (!p.history.length) {
+    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:10px">No history data</div>';
     return;
   }
 
-  // Destroy old chart
-  if (charts[p.id]) { try { charts[p.id].destroy(); } catch(e){} }
+  if (charts[p.id]) { try { charts[p.id].destroy(); } catch(e) {} }
 
   let cum = 0;
   const series = p.history.map(h => {
     cum += h.p;
-    return { x: h.d, y: p.deposit > 0 ? parseFloat((cum / p.deposit * 100).toFixed(2)) : 0 };
+    return { x: h.d, y: p.dep > 0 ? +(cum / p.dep * 100).toFixed(3) : 0 };
   });
 
-  const isPositive = series[series.length - 1]?.y >= 0;
-  const color      = isPositive ? '#00FF94' : '#FF4560';
+  const last  = series[series.length - 1]?.y || 0;
+  const color = last >= 0 ? '#00FF94' : '#FF3B5C';
 
-  charts[p.id] = new ApexCharts(container, {
+  charts[p.id] = new ApexCharts(el, {
     chart: {
       type: 'area', height: '100%',
-      toolbar: { show: false }, sparkline: { enabled: false },
-      animations: { enabled: true, speed: 400 },
-      background: 'transparent',
+      toolbar: { show: false }, background: 'transparent',
+      animations: { enabled: true, speed: 480 },
+      zoom: { enabled: false }, selection: { enabled: false },
     },
-    grid: { show: false, padding: { top: 5, right: 0, bottom: -15, left: -10 } },
+    grid: { show: false, padding: { top: 2, right: 2, bottom: -14, left: -8 } },
     stroke: { curve: 'smooth', width: 2, colors: [color] },
     fill: {
       type: 'gradient',
       gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.4, opacityTo: 0.0,
-        stops: [0, 100],
-        colorStops: [{ offset: 0, color, opacity: 0.4 }, { offset: 100, color, opacity: 0 }]
-      }
+        colorStops: [
+          { offset: 0,   color, opacity: .38 },
+          { offset: 100, color, opacity: 0   },
+        ],
+      },
     },
-    series: [{ name: 'Growth %', data: series }],
-    xaxis: { type: 'datetime', labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+    series: [{ name: 'Growth%', data: series }],
+    xaxis: {
+      type: 'datetime',
+      labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false },
+      crosshairs: { show: false },
+    },
     yaxis: { show: false },
     tooltip: {
       theme: 'dark',
-      x: { format: 'dd MMM yyyy' },
-      y: { formatter: v => v + '%' },
-      style: { fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }
+      x: { format: 'dd MMM yy' },
+      y: { formatter: v => v.toFixed(2) + '%' },
+      style: { fontFamily: 'IBM Plex Mono', fontSize: '10px' },
     },
+    markers: { size: 0 },
+    dataLabels: { enabled: false },
   });
   charts[p.id].render();
 }
 
-// ──────────────────────────────────────────
-// Stats Calculator
-// ──────────────────────────────────────────
-function calcStats(tradeLog) {
-  const profits = tradeLog.map(t => parseFloat(t.profit || 0)).filter(p => p !== 0);
-  if (!profits.length) return { winRate: 0, profitFactor: '—', expectancy: 0 };
+function redraw(id) { const p = buildPorts().find(x => x.id === id); if (p) drawChart(p); }
 
-  const wins   = profits.filter(p => p > 0);
-  const losses = profits.filter(p => p < 0);
-  const sumW   = wins.reduce((a, b) => a + b, 0);
-  const sumL   = Math.abs(losses.reduce((a, b) => a + b, 0));
-
-  return {
-    winRate     : (wins.length / profits.length * 100).toFixed(1),
-    profitFactor: sumL > 0 ? (sumW / sumL).toFixed(2) : '∞',
-    expectancy  : (profits.reduce((a, b) => a + b, 0) / profits.length).toFixed(2),
-  };
+/* ── S4: PERFORMANCE TABLE ──────────────── */
+function setPeriod(p, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const now = new Date(), s = new Date(now);
+  if (p === 'today') s.setHours(0,0,0,0);
+  else if (p === 'week')  s.setDate(now.getDate() - now.getDay());
+  else if (p === 'month') s.setDate(1);
+  else if (p === 'year')  { s.setMonth(0); s.setDate(1); }
+  else if (p === 'all')   { $('d-start').value = ''; $('d-end').value = toDS(now); calcTable(); return; }
+  $('d-start').value = toDS(s);
+  $('d-end').value   = toDS(now);
+  calcTable();
 }
 
-// ──────────────────────────────────────────
-// Period Filter
-// ──────────────────────────────────────────
-function toLocalDateStr(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const dd = String(d.getDate()).padStart(2,'0');
-  return y+'-'+m+'-'+dd;
+function calcTable() {
+  const start = parsDS($('d-start').value);
+  const end   = parsDS($('d-end').value, true) || Date.now();
+  tableRows   = [];
+
+  buildPorts().forEach(p => {
+    // Filter daily_history by date range
+    const fp = p.history
+      .filter(h => h.d >= start && h.d <= end)
+      .reduce((a, h) => a + h.p, 0);
+    const fg = p.dep > 0 ? fp / p.dep * 100 : 0;
+
+    tableRows.push({
+      name:    p.id,
+      profit:  fp,
+      growth:  fg,
+      winRate: p.winRate,
+      pf:      p.pFactor === Infinity ? 999 : p.pFactor,
+      _pf:     p.pFactor,
+      dd:      p.maxDD,
+      online:  p.isOnline ? 1 : 0,
+      dep:     p.dep,
+    });
+  });
+
+  renderTable();
 }
-window.setPeriod = function(p) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (typeof event !== 'undefined' && event && event.target) try { if(event && event.target) event.target.classList.add('active'); } catch(e) {};
-  const now = new Date(); let start = new Date(now);
-  if (p === 'today') start.setHours(0, 0, 0, 0);
-  if (p === 'week')  start.setDate(now.getDate() - now.getDay());
-  if (p === 'month') start.setDate(1);
-  if (p === 'year')  start = new Date(now.getFullYear(), 0, 1);
-  document.getElementById('date-start').value = toLocalDateStr(start);
-  document.getElementById('date-end').value   = toLocalDateStr(now);
-  calculateCustomProfit();
-};
 
-window.calculateCustomProfit = function() {
-  if (!globalPorts || !Object.keys(globalPorts).length) return;
+function sortBy(col) {
+  document.querySelectorAll('.perf-table th').forEach(t => t.classList.remove('sort-a','sort-d'));
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  if (event && event.target) event.target.classList.add(sortDir === 1 ? 'sort-a' : 'sort-d');
+  renderTable();
+}
 
-  const startVal = document.getElementById('date-start').value;
-  const endVal   = document.getElementById('date-end').value;
-  if (!startVal || !endVal) return;
+function renderTable() {
+  const sorted = [...tableRows].sort((a, b) => {
+    const av = a[sortCol], bv = b[sortCol];
+    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
 
-  // parse local date ถูกต้อง ไม่ shift timezone
-  const [sy, sm, sd] = startVal.split('-').map(Number);
-  const [ey, em, ed] = endVal.split('-').map(Number);
-  const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0).getTime();
-  const end   = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+  let gP = 0, gD = 0;
 
-  let grandP = 0, totalDep = 0;
-  let rows = '';
-
-  Object.entries(globalPorts).forEach(([id, data]) => {
-    const s       = data.status || {};
-    const deposit = parseFloat(s.net_deposit || 0);
-    const daily   = data.daily_history || {};
-
-    const pProfit = Object.entries(daily)
-      .filter(([ts]) => {
-        const d = parseInt(ts) * 1000;
-        return d >= start && d <= end;
-      })
-      .reduce((sum, [, p]) => sum + parseFloat(p), 0);
-
-    const growth = deposit > 0 ? (pProfit / deposit * 100) : 0;
-    const dd     = parseFloat(s.max_drawdown || s.drawdown || 0);
-    const tradeLog = data.trade_log ? Object.values(data.trade_log) : [];
-    const st = calcStats(tradeLog);
-
-    grandP   += pProfit;
-    totalDep += deposit;
-
-    rows += `<tr>
-      <td class="mono" style="font-size:11px;color:var(--text);font-weight:600;">${id}</td>
-      <td class="mono text-right ${clrCls(pProfit)}">${fmt(pProfit)}</td>
-      <td class="mono text-right ${clrCls(growth)}">${growth.toFixed(2)}%</td>
-      <td class="mono text-right" style="color:var(--cyan);">${st.winRate}%</td>
-      <td class="mono text-right" style="color:var(--cyan);">${st.profitFactor}</td>
-      <td class="mono text-right" style="color:${dd>20?'var(--red)':dd>10?'var(--orange)':'var(--green)'};">${dd.toFixed(2)}%</td>
+  $('t-body').innerHTML = sorted.map(r => {
+    gP += r.profit; gD += r.dep;
+    const pfS = r._pf === Infinity ? '∞' : r._pf.toFixed(2);
+    const ddColor = r.dd > 20 ? 'var(--r)' : r.dd > 10 ? 'var(--o)' : 'var(--g)';
+    return `<tr>
+      <td style="color:var(--c);font-weight:700">${r.name}</td>
+      <td class="${clc(r.profit)}">${sgn(r.profit)}${fmt(r.profit)}</td>
+      <td class="${clc(r.growth)}">${pct(r.growth)}</td>
+      <td style="color:${r.winRate>=50?'var(--g)':'var(--r)'}">${r.winRate.toFixed(1)}%</td>
+      <td style="color:var(--c)">${pfS}</td>
+      <td style="color:${ddColor}">${r.dd.toFixed(2)}%</td>
+      <td>
+        <span style="font-size:9px;padding:2px 10px;border-radius:10px;
+          ${r.online
+            ? 'background:rgba(0,255,148,.10);color:var(--g)'
+            : 'background:rgba(61,80,96,.12);color:var(--t3)'}">
+          ${r.online ? 'ONLINE' : 'OFFLINE'}
+        </span>
+      </td>
     </tr>`;
-  });
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:22px">No data</td></tr>';
 
-  document.getElementById('period-table').innerHTML = rows;
+  const gG = gD > 0 ? gP / gD * 100 : 0;
+  const fp = $('ft-p'); fp.textContent = sgn(gP) + fmt(gP); fp.className = clc(gP);
+  const fg = $('ft-g'); fg.textContent = pct(gG);            fg.className = clc(gG);
+}
 
-  const gp = document.getElementById('grand-profit');
-  gp.textContent = fmt(grandP);
-  gp.className   = 'text-right mono ' + clrCls(grandP);
+/* ── EMERGENCY CLOSE ALL ────────────────── */
+async function doEmergency() {
+  if (!confirm('⚠️ SEND CLOSE ALL COMMAND?\n\nThis will write commands/closeall=true to Firebase.\nAll MT5 EAs monitoring this node will execute emergency stop.')) return;
+  try {
+    await window.__SET(
+      window.__REF(window.__DB, 'commands/closeall'),
+      { active: true, timestamp: Math.floor(Date.now()/1000), by: 'dashboard' }
+    );
+    toast('🚨 CLOSE ALL written to Firebase', 'var(--r)');
+  } catch(e) { toast('Error: ' + e.message, 'var(--r)'); }
+}
 
-  const gg = document.getElementById('grand-growth');
-  const tg = totalDep > 0 ? (grandP / totalDep * 100) : 0;
-  gg.textContent = tg.toFixed(2) + '%';
-  gg.className   = 'text-right mono ' + clrCls(tg);
-};
+/* ── COPY LINK ──────────────────────────── */
+function copyLink(id) {
+  const url = location.origin
+    + location.pathname.replace('index.html','public.html')
+    + '?port=' + encodeURIComponent(id);
+  navigator.clipboard.writeText(url)
+    .then(()  => toast('✓ Link copied — ' + id))
+    .catch(()  => { prompt('Copy this URL:', url); });
+}
 
-// ──────────────────────────────────────────
-// Public Link
-// ──────────────────────────────────────────
-window.copyPublicLink = function(portId) {
-  const url = location.origin + location.pathname.replace('index.html', 'public.html')
-            + '?port=' + encodeURIComponent(portId);
-  navigator.clipboard.writeText(url).then(() => {
-    showError('✓ คัดลอก public link แล้วครับ: ' + portId);
-    document.getElementById('error-box').style.background = '#0a1a0a';
-    document.getElementById('error-box').style.color = 'var(--green)';
-    document.getElementById('error-box').style.borderColor = 'var(--green)';
-  });
-};
+/* ── CLOCK ──────────────────────────────── */
+function updateClock() { if ($('hd-time')) $('hd-time').textContent = new Date().toLocaleTimeString('en-GB'); }
+setInterval(updateClock, 1000);
 
-// ──────────────────────────────────────────
-// Start
-// ──────────────────────────────────────────
-initListeners();
+/* ── AUTO VELOCITY REFRESH ──────────────── */
+setInterval(() => { if (Object.keys(RAW).length) renderVelocity(buildPorts()); }, 30_000);
+
+/* ── INIT DEFAULT TABLE PERIOD ──────────── */
+document.addEventListener('fb:ready', () => {
+  const now = new Date(), s = new Date(now); s.setHours(0,0,0,0);
+  $('d-start').value = toDS(s);
+  $('d-end').value   = toDS(now);
+});
 </script>
 </body>
 </html>
