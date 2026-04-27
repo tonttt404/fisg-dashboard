@@ -1,1067 +1,909 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FISG · Quant Command Center</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EA MT5 Dashboard — Aura Quant</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.2/dist/apexcharts.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Firebase SDK (ESM) -->
-<script type="module">
-  import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
 
-  const FB_CFG = {
-    apiKey:            "AIzaSyAGCm8GqSplj33Xyw05iy4yzPalMXbLxj0",
-    authDomain:        "fisg-analytics.firebaseapp.com",
-    databaseURL:       "https://fisg-analytics-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId:         "fisg-analytics",
-    storageBucket:     "fisg-analytics.firebasestorage.app",
-    messagingSenderId: "78360571677",
-    appId:             "1:78360571677:web:04797d955a553df1b3fbf4"
-  };
-
-  const app = initializeApp(FB_CFG);
-  const db  = getDatabase(app);
-
-  // Expose to vanilla JS scope
-  window.__DB  = db;
-  window.__REF = ref;
-  window.__SET = set;
-  window.__OV  = onValue;
-
-  document.dispatchEvent(new Event('fb:ready'));
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          display: ['Syne', 'Inter', 'sans-serif'],
+        },
+        colors: {
+          neon:    '#00E5FF',
+          profit:  '#10E981',
+          loss:    '#FF4D6D',
+          warn:    '#F5A524',
+          bg0:     '#05070A',
+          bg1:     '#0A0D14',
+          bg2:     '#101521',
+          stroke:  '#1D2432',
+        },
+      }
+    }
+  }
 </script>
 
 <style>
-/* ═══════════════════════════════════════════
-   DESIGN TOKENS
-═══════════════════════════════════════════ */
-:root {
-  --bg0:   #020509;
-  --bg1:   #060A10;
-  --bg2:   #0A0F1C;
-  --bg3:   #0F1628;
-  --bg4:   #141D35;
+  :root {
+    --bg-0: #05070A;
+    --bg-1: #0A0D14;
+    --bg-2: #101521;
+    --stroke: #1D2432;
+    --text: #E7ECF3;
+    --muted: #7A8699;
+    --neon: #00E5FF;
+    --profit: #10E981;
+    --loss: #FF4D6D;
+    --warn: #F5A524;
+    --glass-bg: rgba(16, 21, 33, 0.55);
+    --glass-br: rgba(255,255,255,0.06);
+  }
+  html[data-theme="light"] {
+    --bg-0: #F5F7FB;
+    --bg-1: #FFFFFF;
+    --bg-2: #FFFFFF;
+    --stroke: #E2E7EF;
+    --text: #0B1220;
+    --muted: #5A6676;
+    --neon: #0891B2;
+    --profit: #059669;
+    --loss: #E11D48;
+    --warn: #D97706;
+    --glass-bg: rgba(255,255,255,0.75);
+    --glass-br: rgba(0,0,0,0.06);
+  }
 
-  --c:     #00F5FF;   /* cyan primary    */
-  --g:     #00FF94;   /* green profit    */
-  --r:     #FF3B5C;   /* red loss        */
-  --o:     #FF9500;   /* orange warn     */
-  --y:     #FFD60A;   /* yellow accent   */
-  --p:     #BF5AF2;   /* purple special  */
+  html, body { background: var(--bg-0); color: var(--text); font-family: 'Inter', sans-serif; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(0,229,255,0.08), transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, rgba(16,233,129,0.05), transparent 60%),
+      linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+    min-height: 100vh;
+  }
+  html[data-theme="light"] body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(8,145,178,0.08), transparent 60%),
+      linear-gradient(180deg, #F5F7FB 0%, #FFFFFF 100%);
+  }
 
-  --t1:    #C5D5E8;   /* text primary    */
-  --t2:    #7A90A8;   /* text secondary  */
-  --t3:    #3D5060;   /* text muted      */
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .font-display { font-family: 'Syne', 'Inter', sans-serif; letter-spacing: -0.02em; }
 
-  --b1:    rgba(0,245,255,.10);   /* border normal  */
-  --b2:    rgba(0,245,255,.18);   /* border hover   */
-  --b3:    rgba(0,245,255,.04);   /* border subtle  */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--glass-br);
+    border-radius: 18px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .stroke-soft { border-color: var(--stroke); }
 
-  --sh-c:  0 0 24px rgba(0,245,255,.12);
-  --sh-g:  0 0 24px rgba(0,255,148,.12);
-  --sh-r:  0 0 24px rgba(255,59,92,.14);
-}
+  .dot {
+    width: 8px; height: 8px; border-radius: 999px; display: inline-block;
+  }
+  .dot.live {
+    background: var(--profit);
+    box-shadow: 0 0 0 3px rgba(16,233,129,0.15), 0 0 12px rgba(16,233,129,0.8);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .dot.idle {
+    background: #5A6676;
+    box-shadow: 0 0 0 3px rgba(90,102,118,0.15);
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50%     { transform: scale(1.25); opacity: 0.75; }
+  }
 
-/* ═══════════════════════════════════════════
-   RESET & BASE
-═══════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px; font-size: 11px;
+    border: 1px solid var(--glass-br); background: var(--glass-bg);
+    color: var(--text);
+  }
+  .chip .dot { width: 6px; height: 6px; }
 
-body {
-  font-family: 'IBM Plex Mono', monospace;
-  background: var(--bg0);
-  color: var(--t1);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+  .toggle {
+    position: relative; width: 46px; height: 24px; border-radius: 999px;
+    background: var(--stroke); cursor: pointer; transition: background .2s;
+    border: 1px solid var(--glass-br);
+  }
+  .toggle::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 999px;
+    background: var(--neon);
+    box-shadow: 0 0 10px rgba(0,229,255,0.7);
+    transition: transform .2s;
+  }
+  .toggle.on::after { transform: translateX(22px); }
 
-/* scanline texture */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 3px,
-    rgba(0,0,0,.10) 3px, rgba(0,0,0,.10) 4px
-  );
-  pointer-events: none; z-index: 800;
-  mix-blend-mode: overlay;
-}
+  /* ── Hero ───────────────────────────────── */
+  .hero-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(60px, 12vw, 152px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+  .hero-value.pos { color: var(--profit); text-shadow: 0 0 40px rgba(16,233,129,0.35); }
+  .hero-value.neg { color: var(--loss);   text-shadow: 0 0 40px rgba(255,77,109,0.35); }
+  .hero-value.neu { color: var(--text); }
 
-/* ambient glow */
-body::before {
-  content: '';
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(ellipse 65% 42% at 12% 8%,  rgba(0,245,255,.055) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 38% at 88% 88%, rgba(0,255,148,.035) 0%, transparent 65%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(191,90,242,.015) 0%, transparent 70%);
-}
+  /* ── Table ──────────────────────────────── */
+  table.aura { width: 100%; border-collapse: separate; border-spacing: 0; }
+  table.aura thead th {
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); font-weight: 600;
+    padding: 14px 14px; text-align: left;
+    border-bottom: 1px solid var(--stroke);
+    position: sticky; top: 0; background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+  }
+  table.aura tbody td {
+    padding: 16px 14px; border-bottom: 1px solid var(--stroke);
+    font-size: 14px;
+  }
+  table.aura tbody tr.row-main { cursor: pointer; transition: background .15s; }
+  table.aura tbody tr.row-main:hover { background: rgba(0,229,255,0.03); }
+  .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  .pos { color: var(--profit); }
+  .neg { color: var(--loss); }
 
-/* ═══════════════════════════════════════════
-   LAYOUT
-═══════════════════════════════════════════ */
-#app {
-  position: relative; z-index: 10;
-  max-width: 1640px; margin: 0 auto;
-  padding: 28px 20px 80px;
-}
+  /* ── Accordion ─────────────────────────── */
+  .accordion {
+    background: var(--bg-1);
+    border-top: 1px solid var(--stroke);
+    border-bottom: 1px solid var(--stroke);
+  }
 
-/* ═══════════════════════════════════════════
-   CARDS
-═══════════════════════════════════════════ */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--b1);
-  border-radius: 16px;
-  position: relative;
-  overflow: hidden;
-  transition: border-color .25s, box-shadow .25s;
-}
-.card::before {
-  content: ''; position: absolute;
-  top: 0; left: 12%; right: 12%; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--c), transparent);
-  opacity: .22;
-}
-.card:hover { border-color: var(--b2); }
+  /* ── CRITICAL Z-INDEX FIX ──────────────── */
+  .chart-wrap {
+    position: relative;
+    z-index: 1;          /* chart / SVG sit on layer 1 */
+  }
+  .chart-wrap .apexcharts-canvas,
+  .chart-wrap .apexcharts-canvas svg,
+  .chart-wrap .apexcharts-svg {
+    z-index: 1 !important;
+  }
+  .copy-link-btn {
+    position: relative;
+    z-index: 20;         /* button sits ABOVE chart SVG layers */
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-br);
+    background: var(--glass-bg);
+    color: var(--text);
+    font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all .15s;
+  }
+  .copy-link-btn:hover {
+    border-color: var(--neon);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+    color: var(--neon);
+  }
 
-.card-cyan   { border-left: 2px solid var(--c); }
-.card-green  { border-left: 2px solid var(--g); }
-.card-red    { border-left: 2px solid var(--r); }
-.card-orange { border-left: 2px solid var(--o); }
-.card-purple { border-left: 2px solid var(--p); }
+  .skel { background: linear-gradient(90deg, #0f1420 0%, #161d2c 50%, #0f1420 100%);
+          background-size: 200% 100%; animation: skeleton 1.4s infinite; border-radius: 8px; }
+  @keyframes skeleton { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-/* ═══════════════════════════════════════════
-   TYPOGRAPHY
-═══════════════════════════════════════════ */
-.syne { font-family: 'Syne', sans-serif; }
-.lbl  { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--t3); font-weight: 700; }
-.lbl2 { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--t2); font-weight: 600; }
+  .scroll-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: #1d2432; border-radius: 999px; }
 
-.v-xxl { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -.025em; }
-.v-xl  { font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -.02em;  }
-.v-lg  { font-size: 16px; font-weight: 700; line-height: 1; }
-.v-md  { font-size: 13px; font-weight: 600; }
-.v-sm  { font-size: 11px; font-weight: 600; }
+  /* ── Date Filter Buttons ─────────────── */
+  .date-btn {
+    padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
+    font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s;
+    border: 1px solid transparent;
+    background: transparent; color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+  .date-btn:hover:not(.active) {
+    color: var(--text); border-color: var(--glass-br);
+    background: rgba(255,255,255,0.03);
+  }
+  .date-btn.active {
+    background: var(--neon); color: #05070A;
+    box-shadow: 0 0 16px rgba(0,229,255,0.4);
+    cursor: default;
+  }
+  html[data-theme="light"] .date-btn.active {
+    background: #0891B2; color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(8,145,178,0.3);
+  }
+  .date-sep { width: 1px; height: 20px; background: var(--stroke); }
 
-.plus  { color: var(--g); }
-.minus { color: var(--r); }
-.cyan  { color: var(--c); }
-.muted { color: var(--t2); }
-.dim   { color: var(--t3); }
-
-/* ═══════════════════════════════════════════
-   PULSE DOT
-═══════════════════════════════════════════ */
-.dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--g); flex-shrink: 0;
-  box-shadow: 0 0 0 0 rgba(0,255,148,.5);
-  animation: pulse 2.8s ease infinite;
-}
-.dot.off { background: var(--t3); animation: none; box-shadow: none; }
-.dot.warn { background: var(--o); box-shadow: 0 0 0 0 rgba(255,149,0,.5); }
-
-@keyframes pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(0,255,148,.55); }
-  60%  { box-shadow: 0 0 0 8px rgba(0,255,148,0);  }
-  100% { box-shadow: 0 0 0 0 rgba(0,255,148,0);    }
-}
-
-/* ═══════════════════════════════════════════
-   VELOCITY CARDS
-═══════════════════════════════════════════ */
-.vel-card {
-  background: linear-gradient(145deg, var(--bg2) 0%, var(--bg3) 100%);
-  border: 1px solid var(--b1);
-  border-radius: 14px;
-  padding: 22px 24px;
-  position: relative; overflow: hidden;
-  transition: border-color .2s;
-}
-.vel-card::after {
-  content: ''; position: absolute;
-  top: -40px; right: -40px;
-  width: 110px; height: 110px; border-radius: 50%;
-  background: rgba(0,245,255,.035);
-}
-.vel-card:hover { border-color: var(--b2); }
-
-/* ═══════════════════════════════════════════
-   ACCORDION
-═══════════════════════════════════════════ */
-.acc-wrap { border-radius: 14px; overflow: visible; border: 1px solid var(--b1); background: var(--bg2); }
-
-.acc-hdr {
-  display: flex; align-items: center; gap: 14px;
-  padding: 18px 22px; cursor: pointer; user-select: none;
-  border-bottom: 1px solid transparent;
-  transition: background .18s, border-color .18s;
-  border-radius: 14px;
-}
-.acc-hdr:hover  { background: rgba(0,245,255,.025); }
-.acc-hdr.open   { border-bottom-color: var(--b1); border-radius: 14px 14px 0 0; background: rgba(0,245,255,.03); }
-
-.acc-arrow { margin-left: auto; font-size: 11px; color: var(--t3); transition: transform .22s; flex-shrink: 0; }
-.acc-hdr.open .acc-arrow { transform: rotate(180deg); }
-
-.acc-body { display: none; padding: 22px; }
-.acc-body.open { display: block; }
-
-/* ── CRITICAL Z-INDEX FIX ─────────────────
-   Chart canvas: z-index 1  (underneath)
-   Action buttons: z-index 20 (always on top)
-   This guarantees "Copy Public Link" is 100% clickable
-─────────────────────────────────────────── */
-.chart-zone {
-  position: relative;
-  z-index: 1;           /* chart lives here */
-  margin-bottom: 0;
-}
-.chart-zone .apexcharts-canvas { position: relative; z-index: 1; }
-
-.port-actions {
-  position: relative;
-  z-index: 20;          /* ALWAYS above chart canvas */
-  pointer-events: auto !important;
-  margin-top: 14px;
-  display: flex; gap: 8px;
-}
-.port-actions > * {
-  position: relative;
-  z-index: 20;
-  pointer-events: auto !important;
-}
-
-/* ═══════════════════════════════════════════
-   TABLE
-═══════════════════════════════════════════ */
-.perf-table { width: 100%; border-collapse: collapse; }
-.perf-table th {
-  font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--t3); font-weight: 700;
-  padding: 0 14px 14px; text-align: right;
-  cursor: pointer; white-space: nowrap; user-select: none;
-}
-.perf-table th:first-child { text-align: left; }
-.perf-table th:hover { color: var(--c); }
-.perf-table th.sort-a::after { content: ' ▲'; color: var(--c); }
-.perf-table th.sort-d::after { content: ' ▼'; color: var(--c); }
-.perf-table td {
-  font-size: 11px; padding: 11px 14px;
-  border-bottom: 1px solid var(--b3);
-  text-align: right;
-}
-.perf-table td:first-child { text-align: left; }
-.perf-table tr:hover td { background: rgba(0,245,255,.018); }
-.perf-table tfoot td {
-  font-weight: 700; font-size: 12px;
-  padding-top: 16px;
-  border-top: 2px solid var(--b1); border-bottom: none;
-}
-
-/* ═══════════════════════════════════════════
-   BUTTONS & TABS
-═══════════════════════════════════════════ */
-.tab {
-  padding: 6px 14px; border-radius: 7px;
-  font-size: 10px; font-weight: 700; letter-spacing: .04em;
-  cursor: pointer; border: 1px solid transparent;
-  background: transparent; color: var(--t3);
-  font-family: 'IBM Plex Mono', monospace;
-  transition: all .15s;
-}
-.tab.active { background: rgba(0,245,255,.1); color: var(--c); border-color: var(--b1); }
-.tab:hover:not(.active) { color: var(--t1); }
-
-.btn {
-  padding: 8px 18px; border-radius: 8px;
-  font-size: 10px; font-weight: 700; letter-spacing: .05em;
-  cursor: pointer; border: none;
-  font-family: 'IBM Plex Mono', monospace;
-  transition: all .15s;
-}
-.btn-c  { background: var(--c); color: #000; }
-.btn-c:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.btn-g  { background: rgba(0,255,148,.12); color: var(--g); border: 1px solid rgba(0,255,148,.25); }
-.btn-r  { background: rgba(255,59,92,.12);  color: var(--r); border: 1px solid rgba(255,59,92,.28); }
-.btn-r:hover { background: rgba(255,59,92,.22); }
-.btn-ghost { background: rgba(0,245,255,.08); color: var(--c); border: 1px solid var(--b1); }
-.btn-ghost:hover { background: rgba(0,245,255,.15); }
-.btn-dim  { background: rgba(255,255,255,.04); color: var(--t2); border: 1px solid var(--b1); }
-
-input[type="date"] {
-  background: var(--bg3); border: 1px solid var(--b1); color: var(--c);
-  padding: 7px 11px; border-radius: 8px;
-  font-size: 10px; font-family: 'IBM Plex Mono', monospace; outline: none;
-}
-input[type="date"]:focus { border-color: var(--c); }
-
-/* ═══════════════════════════════════════════
-   RISK BAR
-═══════════════════════════════════════════ */
-.rbar-wrap { background: rgba(255,255,255,.06); border-radius: 4px; height: 3px; margin-top: 6px; }
-.rbar      { height: 3px; border-radius: 4px; transition: width .55s ease; }
-
-/* ═══════════════════════════════════════════
-   LOADER & TOAST
-═══════════════════════════════════════════ */
-#loader {
-  position: fixed; inset: 0; z-index: 9000;
-  background: var(--bg0);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 18px;
-}
-.spin {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 2px solid var(--b1); border-top-color: var(--c);
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-#toast {
-  position: fixed; bottom: 28px; right: 28px; z-index: 9500;
-  background: var(--bg3); border: 1px solid var(--b1); border-radius: 10px;
-  padding: 12px 20px; font-size: 11px; max-width: 320px;
-  transform: translateY(70px); opacity: 0;
-  transition: all .28s cubic-bezier(.34,1.56,.64,1);
-  pointer-events: none;
-}
-#toast.show { transform: translateY(0); opacity: 1; }
-
-/* ═══════════════════════════════════════════
-   EMERGENCY BTN
-═══════════════════════════════════════════ */
-.emg {
-  padding: 9px 22px; border-radius: 9px; font-size: 10px; font-weight: 700;
-  letter-spacing: .08em; cursor: pointer;
-  background: linear-gradient(135deg, rgba(255,59,92,.15) 0%, rgba(255,59,92,.07) 100%);
-  border: 1px solid rgba(255,59,92,.32); color: var(--r);
-  font-family: 'IBM Plex Mono', monospace;
-  transition: all .2s;
-}
-.emg:hover { background: rgba(255,59,92,.25); box-shadow: var(--sh-r); }
-
-/* ═══════════════════════════════════════════
-   SECTION HEADER
-═══════════════════════════════════════════ */
-.sec {
-  display: flex; align-items: center; gap: 14px;
-  margin-bottom: 18px;
-}
-.sec-line { flex: 1; height: 1px; background: var(--b1); }
-.sec-tag  { font-size: 9px; letter-spacing: .22em; text-transform: uppercase; color: var(--t3); font-weight: 700; white-space: nowrap; }
-
-/* ═══════════════════════════════════════════
-   MICRO KV ROW
-═══════════════════════════════════════════ */
-.kv {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 5px 0; border-bottom: 1px solid var(--b3);
-}
-.kv:last-child { border-bottom: none; }
-
-/* ═══════════════════════════════════════════
-   ANIMATIONS
-═══════════════════════════════════════════ */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
-}
-.fu   { animation: fadeUp .38s ease both; }
-.fd1  { animation-delay: .05s; }
-.fd2  { animation-delay: .10s; }
-.fd3  { animation-delay: .15s; }
-.fd4  { animation-delay: .20s; }
-
-/* scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--b1); border-radius: 2px; }
+  /* ── Toast Notification ──────────────── */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 100;
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--neon);
+    box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 24px rgba(0,229,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+    font-size: 13px; font-weight: 500;
+    color: var(--text);
+    animation: toastBounceIn .35s cubic-bezier(0.34,1.56,0.64,1) both;
+    max-width: 420px;
+  }
+  .toast.out {
+    animation: toastFadeOut .3s ease-in both;
+  }
+  @keyframes toastBounceIn {
+    0%   { opacity: 0; transform: translateX(60px) scale(0.92); }
+    100% { opacity: 1; transform: translateX(0)   scale(1); }
+  }
+  @keyframes toastFadeOut {
+    0%   { opacity: 1; transform: translateX(0)   scale(1); }
+    100% { opacity: 0; transform: translateX(60px) scale(0.92); }
+  }
+  .toast-close {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 16px; padding: 0; line-height: 1; transition: color .15s;
+  }
+  .toast-close:hover { color: var(--text); }
 </style>
 </head>
-<body>
+<body class="antialiased">
 
-<!-- LOADER -->
-<div id="loader">
-  <div class="spin"></div>
-  <p style="font-size:10px;color:var(--t3);letter-spacing:.18em">INITIALISING FIREBASE...</p>
-</div>
+<div class="max-w-[1440px] mx-auto px-6 py-6">
 
-<!-- TOAST -->
-<div id="toast" id="toast"></div>
-
-<!-- ════════════════════════════════════════
-     APP
-════════════════════════════════════════ -->
-<div id="app" style="display:none">
-
-  <!-- ── HEADER ───────────────────────── -->
-  <header class="fu" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:14px">
-    <div>
-      <h1 class="syne" style="font-size:24px;font-weight:800;color:var(--c);letter-spacing:-.025em">
-        FISG <span style="color:var(--t3);font-weight:400;font-size:17px">QUANT</span>
-      </h1>
-      <p class="lbl" style="margin-top:5px">
-        Command Center &nbsp;·&nbsp;
-        <span id="hd-ports">—</span> ports &nbsp;·&nbsp;
-        <span id="hd-time">—</span>
-      </p>
-    </div>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div class="dot" id="live-dot"></div>
-        <span class="lbl" id="live-lbl">LIVE</span>
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="glass flex flex-wrap items-center justify-between gap-4 px-6 py-4 mb-6">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+           style="background:linear-gradient(135deg,var(--neon),rgba(0,229,255,0.3));box-shadow:0 0 24px rgba(0,229,255,0.35);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#05070A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L9 11L13 15L21 7"/><path d="M14 7h7v7"/></svg>
       </div>
-      <button class="emg" onclick="doEmergency()">⚠ CLOSE ALL</button>
+      <div>
+        <h1 class="font-display text-2xl font-bold">EA MT5 Dashboard</h1>
+        <p class="text-xs" style="color:var(--muted)">Aura Quant — Real-time EA Portfolio</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="chip"><span class="dot live"></span>LIVE <span id="clock" class="font-mono ml-1">--:--:--</span></span>
+      <span class="chip" id="fb-chip">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="#F5A524"><path d="M3.89 15.672L6.255 3.58 12 12.8l-8.11 2.872z"/></svg>
+        Firebase <span id="fb-state" style="color:var(--muted)">connecting</span>
+      </span>
+
+      <label class="flex items-center gap-2 text-xs" style="color:var(--muted)">
+        <span>Light</span>
+        <div id="theme-toggle" class="toggle on"></div>
+        <span>Dark</span>
+      </label>
+
+      <label class="flex items-center gap-2 text-xs" style="color:var(--muted)">
+        <span id="lbl-usc" class="text-white">USC</span>
+        <div id="ccy-toggle" class="toggle"></div>
+        <span id="lbl-usd">USD</span>
+      </label>
     </div>
   </header>
 
-  <!-- ══════════════════════════════════════
-       S1 · GRAND OVERVIEW
-  ══════════════════════════════════════ -->
-  <div class="sec fu fd1">
-    <span class="sec-tag">01 · Grand Overview</span>
-    <div class="sec-line"></div>
-  </div>
+  <!-- ═══════════════ HERO METRIC ═══════════════ -->
+  <section class="glass px-8 py-10 mb-6 overflow-hidden relative">
+    <div class="flex items-start justify-between gap-6 flex-wrap">
+      <div>
+        <p class="font-display uppercase tracking-[0.2em] text-xs mb-3" style="color:var(--muted)">Today Profit</p>
+        <div id="hero-value" class="hero-value neu">$ 0.00</div>
+        <p class="mt-4 text-sm" style="color:var(--muted)">
+          <span id="hero-ccy" class="font-mono">USC</span> •
+          <span id="hero-ports" class="font-mono">0</span> ports reporting •
+          <span id="hero-live"  class="font-mono">0</span> live
+        </p>
+      </div>
 
-  <div class="fu fd1" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:32px">
-    <div class="card card-cyan" style="padding:20px 22px">
-      <p class="lbl">Total Equity</p>
-      <p class="v-xxl cyan" id="ov-eq" style="margin-top:8px">—</p>
-      <p class="lbl" id="ov-eq-sub" style="margin-top:5px;color:var(--t3)">USC</p>
-    </div>
-    <div class="card card-cyan" style="padding:20px 22px">
-      <p class="lbl">Total Balance</p>
-      <p class="v-xxl" id="ov-bal" style="margin-top:8px;color:var(--t1)">—</p>
-      <p class="lbl" style="margin-top:5px;color:var(--t3)">USC</p>
-    </div>
-    <div class="card card-cyan" style="padding:20px 22px">
-      <p class="lbl">Net Deposit</p>
-      <p class="v-xxl" id="ov-dep" style="margin-top:8px;color:var(--t2)">—</p>
-      <p class="lbl" id="ov-dep-sub" style="margin-top:5px;color:var(--t3)">sum of DEAL_TYPE_BALANCE</p>
-    </div>
-    <div class="card card-cyan" style="padding:20px 22px">
-      <p class="lbl">Grand Profit (USC)</p>
-      <p class="v-xxl" id="ov-pnl" style="margin-top:8px">—</p>
-      <p class="lbl" style="margin-top:5px;color:var(--t3)">balance − deposit</p>
-    </div>
-    <div class="card card-green" style="padding:20px 22px">
-      <p class="lbl">Portfolio Growth</p>
-      <p class="v-xxl" id="ov-gr" style="margin-top:8px">—</p>
-      <p class="lbl" style="margin-top:5px;color:var(--t3)">profit / deposit × 100</p>
-    </div>
-    <div class="card card-red" style="padding:20px 22px">
-      <p class="lbl">Overall Max DD</p>
-      <p class="v-xxl" id="ov-dd" style="margin-top:8px;color:var(--o)">—</p>
-      <p class="lbl" id="ov-dd-sub" style="margin-top:5px;color:var(--t3)">avg across ports</p>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       S2 · VELOCITY & MOMENTUM
-  ══════════════════════════════════════ -->
-  <div class="sec fu fd2">
-    <span class="sec-tag">02 · Velocity &amp; Momentum</span>
-    <div class="sec-line"></div>
-  </div>
-
-  <div class="fu fd2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:13px;margin-bottom:32px">
-    <div class="vel-card">
-      <p class="lbl">Last 1 Hour</p>
-      <p class="v-xl" id="vel-1h" style="margin-top:10px">—</p>
-      <p class="lbl" id="vel-1h-n" style="margin-top:5px">— ports active</p>
-    </div>
-    <div class="vel-card">
-      <p class="lbl">Last 6 Hours</p>
-      <p class="v-xl" id="vel-6h" style="margin-top:10px">—</p>
-      <p class="lbl" id="vel-6h-n" style="margin-top:5px">— ports active</p>
-    </div>
-    <div class="vel-card">
-      <p class="lbl">Today (from 00:00)</p>
-      <p class="v-xl" id="vel-td" style="margin-top:10px">—</p>
-      <p class="lbl" id="vel-td-n" style="margin-top:5px">— ports active</p>
-    </div>
-    <div class="vel-card" style="background:linear-gradient(145deg,rgba(255,59,92,.055),var(--bg2));border-color:rgba(255,59,92,.18)">
-      <p class="lbl" style="color:rgba(255,59,92,.7)">DD Alert</p>
-      <p class="v-xl" id="vel-dd" style="margin-top:10px;color:var(--o)">—</p>
-      <p class="lbl" id="vel-dd-n" style="margin-top:5px">— ports &gt;10% DD</p>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════
-       S3 · DEEP-DIVE PORTFOLIOS (ACCORDION)
-  ══════════════════════════════════════ -->
-  <div class="sec fu fd3">
-    <span class="sec-tag">03 · Deep-Dive Portfolios</span>
-    <div class="sec-line"></div>
-    <button class="tab" onclick="allAcc(true)"  style="white-space:nowrap">Expand All</button>
-    <button class="tab" onclick="allAcc(false)" style="white-space:nowrap;margin-left:4px">Collapse All</button>
-  </div>
-
-  <div id="acc-list" class="fu fd3" style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px"></div>
-
-  <!-- ══════════════════════════════════════
-       S4 · PERFORMANCE GRID
-  ══════════════════════════════════════ -->
-  <div class="sec fu fd4">
-    <span class="sec-tag">04 · Performance Grid</span>
-    <div class="sec-line"></div>
-  </div>
-
-  <div class="card fu fd4" style="padding:26px">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:22px">
-      <button class="tab active" onclick="setPeriod('today',this)">Today</button>
-      <button class="tab" onclick="setPeriod('week',this)">Week</button>
-      <button class="tab" onclick="setPeriod('month',this)">Month</button>
-      <button class="tab" onclick="setPeriod('year',this)">Year</button>
-      <button class="tab" onclick="setPeriod('all',this)">All Time</button>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <input type="date" id="d-start">
-        <span style="color:var(--t3);font-size:11px">→</span>
-        <input type="date" id="d-end">
-        <button class="btn btn-c" onclick="calcTable()">GO</button>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 min-w-[320px]">
+        <div class="glass px-4 py-3">
+          <p class="text-[10px] uppercase tracking-widest" style="color:var(--muted)">Grand Equity</p>
+          <p id="kpi-equity" class="num text-xl mt-1">0.00</p>
+        </div>
+        <div class="glass px-4 py-3">
+          <p class="text-[10px] uppercase tracking-widest" style="color:var(--muted)">Grand Balance</p>
+          <p id="kpi-balance" class="num text-xl mt-1">0.00</p>
+        </div>
+        <div class="glass px-4 py-3">
+          <p class="text-[10px] uppercase tracking-widest" style="color:var(--muted)">Floating</p>
+          <p id="kpi-float" class="num text-xl mt-1">0.00</p>
+        </div>
+        <div class="glass px-4 py-3">
+          <p class="text-[10px] uppercase tracking-widest" style="color:var(--muted)">Max DD %</p>
+          <p id="kpi-dd" class="num text-xl mt-1">0.00%</p>
+        </div>
       </div>
     </div>
-    <div style="overflow-x:auto">
-      <table class="perf-table">
+  </section>
+
+  <!-- ═══════════════ MAIN TABLE ═══════════════ -->
+  <section class="glass overflow-hidden">
+    <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b stroke-soft">
+      <div class="flex items-center gap-3 flex-wrap">
+        <h2 class="font-display text-lg font-bold">Ports</h2>
+        <div class="date-sep"></div>
+        <!-- Date Range Filter -->
+        <div class="flex items-center gap-1">
+          <button class="date-btn active" data-range="today">Today</button>
+          <button class="date-btn" data-range="week">Week</button>
+          <button class="date-btn" data-range="month">Month</button>
+          <button class="date-btn" data-range="year">Year</button>
+          <button class="date-btn" data-range="all">All Time</button>
+        </div>
+        <div class="date-sep"></div>
+        <button id="date-go-btn" class="date-btn" style="background:var(--glass-bg);color:var(--text)">GO →</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="search" type="text" placeholder="Search ports / EA…"
+               class="bg-transparent text-sm px-3 py-2 rounded-lg border stroke-soft focus:outline-none focus:border-cyan-400 w-56" />
+        <button id="refresh-btn" class="copy-link-btn" style="z-index:2">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto scroll-thin">
+      <table class="aura min-w-[1100px]">
         <thead>
           <tr>
-            <th onclick="sortBy('name')"    style="text-align:left">Port ID</th>
-            <th onclick="sortBy('profit')"  >Profit (USC)</th>
-            <th onclick="sortBy('growth')"  >Growth %</th>
-            <th onclick="sortBy('winRate')" >Win Rate</th>
-            <th onclick="sortBy('pf')"      >Profit Factor</th>
-            <th onclick="sortBy('dd')"      >Max DD</th>
-            <th onclick="sortBy('online')"  >Status</th>
+            <th>STATUS</th>
+            <th>PORT ID</th>
+            <th>EA NAME</th>
+            <th class="text-right">EQUITY</th>
+            <th class="text-right">BALANCE</th>
+            <th class="text-right">TODAY PROFIT</th>
+            <th class="text-right">FLOAT</th>
+            <th class="text-right">MAX DD</th>
+            <th class="text-right">MAX DD%</th>
           </tr>
         </thead>
-        <tbody id="t-body"></tbody>
-        <tfoot>
-          <tr>
-            <td style="text-align:left;color:var(--c)">GRAND TOTAL</td>
-            <td id="ft-p">—</td>
-            <td id="ft-g">—</td>
-            <td colspan="4"></td>
-          </tr>
-        </tfoot>
+        <tbody id="ports-body">
+          <!-- populated by JS -->
+        </tbody>
       </table>
     </div>
-  </div>
+    <div id="empty-state" class="hidden px-6 py-12 text-center" style="color:var(--muted)">
+      No ports reporting yet. Once your EAs boot, they'll appear here.
+    </div>
+  </section>
 
-</div><!-- /app -->
-
-<!-- ════════════════════════════════════════
-     VANILLA JS (runs after Firebase ESM loads)
-════════════════════════════════════════ -->
-<script>
-/* ── UTILS ─────────────────────────────── */
-const $  = id => document.getElementById(id);
-const fmt = (v, d=2) => parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
-const sgn = v => parseFloat(v||0) >= 0 ? '+' : '';
-const clc = v => parseFloat(v||0) >= 0 ? 'plus' : 'minus';
-const pct = v => (parseFloat(v||0)>=0?'+':'')+parseFloat(v||0).toFixed(2)+'%';
-
-function toDS(d) {
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function parsDS(s, end=false) {
-  if (!s) return end ? Date.now() : 0;
-  const [y,m,d] = s.split('-').map(Number);
-  return end ? new Date(y,m-1,d,23,59,59,999).getTime()
-             : new Date(y,m-1,d,0,0,0,0).getTime();
-}
-function toast(msg, col='var(--c)') {
-  const t = $('toast');
-  t.textContent = msg; t.style.color = col;
-  t.classList.add('show');
-  clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.classList.remove('show'), 3400);
-}
-
-/* ── STATE ──────────────────────────────── */
-let RAW = {};           // raw Firebase snapshot  {portId: {status, daily_history, trade_log, equity_log}}
-let charts = {};        // ApexCharts instances    {portId: instance}
-let tableRows = [];     // computed table rows
-let sortCol = 'profit', sortDir = -1;
-
-/* ── STRICT MATH ────────────────────────────
-   Net Deposit  = sum of ALL DEAL_TYPE_BALANCE (already done in MQ5, stored as s.net_deposit)
-   Trade Profit = DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION  (stored in trade_log entries)
-   Growth %     = (Total Trade Profit / Net Deposit) * 100
-   Profit Factor= Gross Profit / |Gross Loss|
-   Win Rate     = (Winning Trades / Total Trades) * 100
-──────────────────────────────────────────── */
-function buildPort(id, data) {
-  const s   = data.status || {};
-  const bal = +s.balance      || 0;
-  const eq  = +s.equity       || 0;
-  const dep = +s.net_deposit  || 0;   // DEAL_TYPE_BALANCE sum (from MQ5)
-  const maxDD  = +s.max_drawdown || +s.drawdown || 0;
-  const curDD  = +s.drawdown || 0;
-  const lastUp = s.last_update ? +s.last_update * 1000 : 0;
-  const ageMin = lastUp ? (Date.now() - lastUp) / 60000 : 9999;
-
-  // daily_history: { "unix_sec": profit_number }
-  const history = Object.entries(data.daily_history || {})
-    .map(([ts, p]) => ({ d: +ts * 1000, p: +p }))
-    .sort((a, b) => a.d - b.d);
-
-  // trade_log: { pushKey: { profit, time } }
-  // profit field = DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION (MQ5 computes this)
-  const trades = data.trade_log ? Object.values(data.trade_log) : [];
-  const wTrades = trades.filter(t => +t.profit > 0);
-  const lTrades = trades.filter(t => +t.profit < 0);
-  const grossW  = wTrades.reduce((a, t) => a + (+t.profit), 0);
-  const grossL  = lTrades.reduce((a, t) => a + Math.abs(+t.profit), 0);
-  const nTotal  = wTrades.length + lTrades.length;
-
-  // Net Profit = Balance - Net Deposit
-  const totalProfit = bal - dep;
-  // Growth % = Total Trade Profit / Net Deposit * 100  (division-by-zero safe)
-  const growth   = dep > 0 ? (totalProfit / dep * 100) : 0;
-  // Win Rate = Winning / Total * 100
-  const winRate  = nTotal > 0 ? (wTrades.length / nTotal * 100) : 0;
-  // Profit Factor = Gross Profit / |Gross Loss|
-  const pFactor  = grossL > 0 ? (grossW / grossL) : (grossW > 0 ? Infinity : 0);
-  // Expectancy
-  const avgW = wTrades.length > 0 ? grossW / wTrades.length : 0;
-  const avgL = lTrades.length > 0 ? grossL / lTrades.length : 0;
-  const expectancy = nTotal > 0 ? ((winRate/100)*avgW) - ((1-(winRate/100))*avgL) : 0;
-
-  return {
-    id, bal, eq, dep, maxDD, curDD,
-    broker:   s.broker   || '—',
-    currency: s.currency || 'USC',
-    isOnline: ageMin > -5 && ageMin < 3,
-    ageMin,
-    history, trades,
-    totalProfit, growth, winRate, pFactor, expectancy,
-    wins: wTrades.length, losses: lTrades.length, nTotal,
-    grossW, grossL,
-    openTrades: Array.isArray(s.open_trades) ? s.open_trades : [],
-  };
-}
-
-function buildPorts() {
-  return Object.entries(RAW).map(([id, data]) => buildPort(id, data));
-}
-
-/* ── FIREBASE BOOT ──────────────────────── */
-function boot() {
-  const db = window.__DB, ref = window.__REF, onValue = window.__OV;
-  onValue(ref(db, 'ports'), snap => {
-    RAW = snap.val() || {};
-    renderAll();
-    $('loader').style.display = 'none';
-    $('app').style.display = 'block';
-  }, err => {
-    $('loader').innerHTML = `<p style="color:var(--r);font-size:12px">Firebase: ${err.message}</p>`;
-  });
-}
-if (window.__DB) boot();
-else document.addEventListener('fb:ready', boot);
-
-/* ── RENDER ALL ─────────────────────────── */
-function renderAll() {
-  const ports = buildPorts();
-  renderOverview(ports);
-  renderVelocity(ports);
-  renderAccordions(ports);
-  calcTable();
-  updateClock();
-}
-
-/* ── S1: OVERVIEW ───────────────────────── */
-function renderOverview(ports) {
-  const tEq  = ports.reduce((a,p) => a + p.eq,  0);
-  const tBal = ports.reduce((a,p) => a + p.bal, 0);
-  const tDep = ports.reduce((a,p) => a + p.dep, 0);
-  const tP   = tBal - tDep;                            // Grand Profit
-  const gr   = tDep > 0 ? (tP / tDep * 100) : 0;      // Growth %
-  const avgDD= ports.length ? ports.reduce((a,p) => a + p.maxDD, 0) / ports.length : 0;
-  const online = ports.filter(p => p.isOnline).length;
-
-  $('ov-eq').textContent  = fmt(tEq);
-  $('ov-bal').textContent = fmt(tBal);
-  $('ov-dep').textContent = fmt(tDep);
-
-  const pnlEl = $('ov-pnl');
-  pnlEl.textContent = sgn(tP) + fmt(tP);
-  pnlEl.className   = 'v-xxl ' + clc(tP);
-
-  const grEl = $('ov-gr');
-  grEl.textContent = pct(gr);
-  grEl.className   = 'v-xxl ' + clc(gr);
-
-  const ddEl = $('ov-dd');
-  ddEl.textContent  = fmt(avgDD) + '%';
-  ddEl.style.color  = avgDD > 20 ? 'var(--r)' : avgDD > 10 ? 'var(--o)' : 'var(--g)';
-
-  $('hd-ports').textContent = online + '/' + ports.length;
-  $('live-dot').className = 'dot' + (online === 0 ? ' off' : '');
-}
-
-/* ── S2: VELOCITY (exact JS timestamps) ─── */
-function renderVelocity(ports) {
-  const now    = Date.now();
-  const ms1h   = now - 3_600_000;
-  const ms6h   = now - 21_600_000;
-  const tod    = new Date(); tod.setHours(0,0,0,0);
-  const msTod  = tod.getTime();
-
-  let p1h=0, p6h=0, ptd=0, a1h=0, a6h=0, atd=0, ddN=0, ddS=0;
-
-  ports.forEach(p => {
-    // Use trade_log timestamps (stored as Unix seconds by MQ5)
-    const trades1h  = p.trades.filter(t => +t.time * 1000 >= ms1h);
-    const trades6h  = p.trades.filter(t => +t.time * 1000 >= ms6h);
-    const tradesTd  = p.trades.filter(t => +t.time * 1000 >= msTod);
-
-    const s1h = trades1h.reduce((a,t) => a + (+t.profit), 0);
-    const s6h = trades6h.reduce((a,t) => a + (+t.profit), 0);
-    const std = tradesTd.reduce((a,t) => a + (+t.profit), 0);
-
-    p1h += s1h; p6h += s6h; ptd += std;
-    if (trades1h.length)  a1h++;
-    if (trades6h.length)  a6h++;
-    if (tradesTd.length)  atd++;
-    if (p.maxDD > 10) { ddN++; ddS += p.maxDD; }
-  });
-
-  function sv(elId, subId, val, n) {
-    const el = $(elId);
-    el.textContent = sgn(val) + fmt(val);
-    el.className   = 'v-xl ' + clc(val);
-    $(subId).textContent = n + ' port' + (n !== 1 ? 's' : '') + ' active';
-  }
-  sv('vel-1h', 'vel-1h-n', p1h, a1h);
-  sv('vel-6h', 'vel-6h-n', p6h, a6h);
-  sv('vel-td', 'vel-td-n', ptd, atd);
-
-  $('vel-dd').textContent   = ddN > 0 ? fmt(ddS / ddN) + '% avg' : 'All Clear';
-  $('vel-dd').style.color   = ddN > 0 ? 'var(--r)' : 'var(--g)';
-  $('vel-dd-n').textContent = ddN + ' port' + (ddN !== 1 ? 's' : '') + ' >10% DD';
-}
-
-/* ── S3: ACCORDIONS ─────────────────────── */
-function renderAccordions(ports) {
-  const list = $('acc-list');
-  // Preserve open state across re-renders
-  const wasOpen = {};
-  list.querySelectorAll('.acc-hdr.open').forEach(h => { wasOpen[h.dataset.id] = true; });
-  list.innerHTML = '';
-
-  ports.forEach(p => {
-    const isOpen = !!wasOpen[p.id];
-    const sid    = 'acc-' + p.id.replace(/\W/g, '_');
-    const ddC    = p.maxDD > 20 ? 'var(--r)' : p.maxDD > 10 ? 'var(--o)' : 'var(--g)';
-    const pfStr  = p.pFactor === Infinity ? '∞' : p.pFactor.toFixed(2);
-    const openFP = p.openTrades.reduce((a, t) => a + (+t.profit || 0), 0);
-
-    const wrap = document.createElement('div');
-    wrap.className = 'acc-wrap';
-
-    wrap.innerHTML = `
-<!-- HEADER -->
-<div class="acc-hdr${isOpen?' open':''}" data-id="${p.id}" onclick="togAcc(this)">
-  <div class="dot${p.isOnline?'':' off'}"></div>
-  <div style="min-width:0">
-    <p class="v-sm cyan" style="letter-spacing:.05em">${p.id}</p>
-    <p class="lbl" style="margin-top:3px">${p.broker} · ${p.currency}</p>
-  </div>
-  <div style="margin-left:auto;text-align:right;margin-right:14px;flex-shrink:0">
-    <p class="v-sm ${clc(p.totalProfit)}">${sgn(p.totalProfit)}${fmt(p.totalProfit)}</p>
-    <p class="lbl" style="margin-top:3px">${pct(p.growth)} growth</p>
-  </div>
-  <span style="font-size:9px;color:var(--t3);margin-right:10px;flex-shrink:0">
-    ${p.isOnline ? Math.round(p.ageMin)+'m ago' : 'OFFLINE'}
-  </span>
-  <span class="acc-arrow">▼</span>
+  <footer class="mt-8 mb-4 text-center text-xs" style="color:var(--muted)">
+    Aura Quant Systems • Live data via Firebase RTDB • <span class="font-mono" id="footer-time"></span>
+  </footer>
 </div>
 
-<!-- BODY -->
-<div class="acc-body${isOpen?' open':''}" id="${sid}">
+<!-- Toast container (fixed bottom-right, z-index:100) -->
+<div id="toast-container" class="toast-container"></div>
 
-  <!-- financials + performance -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-    <div>
-      <p class="lbl2" style="margin-bottom:10px">Financials</p>
-      ${kv('Balance',     fmt(p.bal),                         'var(--t1)')}
-      ${kv('Equity',      fmt(p.eq),                          'var(--c)')}
-      ${kv('Net Deposit', fmt(p.dep),                         'var(--t2)')}
-      ${kv('Net Profit',  sgn(p.totalProfit)+fmt(p.totalProfit), p.totalProfit>=0?'var(--g)':'var(--r)')}
-      ${kv('Growth',      pct(p.growth),                      p.growth>=0?'var(--g)':'var(--r)')}
-    </div>
-    <div>
-      <p class="lbl2" style="margin-bottom:10px">Performance</p>
-      ${kv('Win Rate',       p.winRate.toFixed(1)+'%',   p.winRate>=50?'var(--g)':'var(--r)')}
-      ${kv('Profit Factor',  pfStr,                       'var(--c)')}
-      ${kv('Expectancy',     sgn(p.expectancy)+fmt(p.expectancy), p.expectancy>=0?'var(--g)':'var(--r)')}
-      ${kv('Wins / Losses',  `<span class="plus">${p.wins}</span> / <span class="minus">${p.losses}</span>`, '')}
-      ${kv('Max DD',         p.maxDD.toFixed(2)+'%',     ddC)}
-      <div class="rbar-wrap"><div class="rbar" style="width:${Math.min(p.maxDD,100)}%;background:${ddC}"></div></div>
-    </div>
-  </div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCRIPT                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, off }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  ${p.openTrades.length ? `
-  <!-- open positions -->
-  <div style="margin-bottom:18px;padding:14px 16px;background:var(--bg3);border-radius:10px;border:1px solid var(--b1)">
-    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-      <p class="lbl2">Open Positions (${p.openTrades.length})</p>
-      <p class="v-sm ${clc(openFP)}">${sgn(openFP)}${fmt(openFP)}</p>
-    </div>
-    ${p.openTrades.map(t => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--b3);font-size:10px">
-      <span style="color:${t.type==='BUY'?'var(--g)':'var(--r)'};font-weight:700;width:36px">${t.type}</span>
-      <span style="color:var(--c)">${t.sym}</span>
-      <span style="color:var(--t2)">${t.lots}L</span>
-      <span class="${clc(t.profit)}">${sgn(t.profit)}${fmt(t.profit)}</span>
-    </div>`).join('')}
-  </div>` : ''}
+  // ─── CONFIG ──────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyB-fPn4we00OIuN9-88L67kccb-IIoXBEk",
+    authDomain: "aura-quant-dash.firebaseapp.com",
+    databaseURL: "https://aura-quant-dash-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "aura-quant-dash",
+    storageBucket: "aura-quant-dash.firebasestorage.app",
+    messagingSenderId: "1008871052389",
+    appId: "1:1008871052389:web:3ebd71ecb630bac18ee28c",
+    measurementId: "G-ME9MVTH917",
+  };
 
-  <!-- CHART ZONE — z-index:1, isolated below buttons -->
-  <div class="chart-zone">
-    <p class="lbl" style="margin-bottom:9px;color:var(--t2)">Equity Curve (% Growth from Deposit)</p>
-    <div id="ch-${p.id.replace(/\W/g,'_')}"
-         style="height:160px;position:relative;z-index:1;pointer-events:auto"></div>
-  </div>
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
 
-  <!-- PORT ACTIONS — z-index:20 ALWAYS above chart canvas -->
-  <div class="port-actions">
-    <button class="btn btn-ghost" onclick="copyLink('${p.id}')">
-      🔗 Copy Public Link
-    </button>
-    <button class="btn btn-dim" onclick="redraw('${p.id}')">↻</button>
-  </div>
+  // ─── STATE ───────────────────────────────────────────────────
+  const state = {
+    ports:      {},       // { portId: snapshot }
+    history:    {},       // { portId: { date: point } }
+    theme:      'dark',
+    currency:   'USC',    // USC => raw, USD => /100
+    expanded:   new Set(),
+    charts:     {},       // { portId: ApexCharts }
+    historyListeners: {}, // { portId: unsubscribe }
+    search:     '',
+  };
+  const lastEANames = {}; // { portId: 'ea_name' } — tracked for change detection
 
-</div>`;
+  // ─── UTILS ───────────────────────────────────────────────────
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-    list.appendChild(wrap);
-    if (isOpen) setTimeout(() => drawChart(p), 80);
-  });
-}
+  const safe = (v, fb = 0) => (v === null || v === undefined || Number.isNaN(v) ? fb : v);
 
-function kv(label, val, col) {
-  return `<div class="kv">
-    <span class="lbl">${label}</span>
-    <span style="font-size:11px;font-weight:600;color:${col||'var(--t1)'}">${val}</span>
-  </div>`;
-}
-
-function togAcc(hdr) {
-  const sid  = 'acc-' + hdr.dataset.id.replace(/\W/g,'_');
-  const body = $(sid);
-  const op   = hdr.classList.contains('open');
-  hdr.classList.toggle('open', !op);
-  body.classList.toggle('open', !op);
-  if (!op) {
-    const p = buildPorts().find(x => x.id === hdr.dataset.id);
-    if (p) setTimeout(() => drawChart(p), 65);
+  function fmtMoney(n) {
+    const v = safe(n, 0);
+    const divided = state.currency === 'USD' ? v / 100 : v;
+    const symbol  = state.currency === 'USD' ? '$' : '¢';
+    const sign    = divided < 0 ? '-' : '';
+    const abs     = Math.abs(divided);
+    return `${sign}${symbol}${abs.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}`;
   }
-}
-
-function allAcc(open) {
-  document.querySelectorAll('.acc-hdr').forEach(hdr => {
-    const sid  = 'acc-' + hdr.dataset.id.replace(/\W/g,'_');
-    const body = $(sid);
-    hdr.classList.toggle('open', open);
-    body.classList.toggle('open', open);
-    if (open) {
-      const p = buildPorts().find(x => x.id === hdr.dataset.id);
-      if (p) setTimeout(() => drawChart(p), 65);
-    }
-  });
-}
-
-/* ── APEX CHART ─────────────────────────── */
-function drawChart(p) {
-  const cid = 'ch-' + p.id.replace(/\W/g,'_');
-  const el  = $(cid);
-  if (!el) return;
-
-  if (!p.history.length) {
-    el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:10px">No history data</div>';
-    return;
+  function fmtPct(n) {
+    return `${safe(n,0).toFixed(2)}%`;
+  }
+  function colorClass(n) {
+    const v = safe(n, 0);
+    if (v > 0.0001)  return 'pos';
+    if (v < -0.0001) return 'neg';
+    return '';
+  }
+  function isLive(p) {
+    const t = safe(p?.last_update_ms, 0);
+    return t && (Date.now() - t < 60_000);
   }
 
-  if (charts[p.id]) { try { charts[p.id].destroy(); } catch(e) {} }
+  // ─── CLOCK ───────────────────────────────────────────────────
+  setInterval(() => {
+    const d = new Date();
+    const pad = (x) => String(x).padStart(2, '0');
+    const s = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
+    $('#clock').textContent = s;
+    $('#footer-time').textContent = d.toISOString();
+  }, 1000);
 
-  let cum = 0;
-  const series = p.history.map(h => {
-    cum += h.p;
-    return { x: h.d, y: p.dep > 0 ? +(cum / p.dep * 100).toFixed(3) : 0 };
-  });
-
-  const last  = series[series.length - 1]?.y || 0;
-  const color = last >= 0 ? '#00FF94' : '#FF3B5C';
-
-  charts[p.id] = new ApexCharts(el, {
-    chart: {
-      type: 'area', height: '100%',
-      toolbar: { show: false }, background: 'transparent',
-      animations: { enabled: true, speed: 480 },
-      zoom: { enabled: false }, selection: { enabled: false },
-    },
-    grid: { show: false, padding: { top: 2, right: 2, bottom: -14, left: -8 } },
-    stroke: { curve: 'smooth', width: 2, colors: [color] },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        colorStops: [
-          { offset: 0,   color, opacity: .38 },
-          { offset: 100, color, opacity: 0   },
-        ],
-      },
-    },
-    series: [{ name: 'Growth%', data: series }],
-    xaxis: {
-      type: 'datetime',
-      labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false },
-      crosshairs: { show: false },
-    },
-    yaxis: { show: false },
-    tooltip: {
-      theme: 'dark',
-      x: { format: 'dd MMM yy' },
-      y: { formatter: v => v.toFixed(2) + '%' },
-      style: { fontFamily: 'IBM Plex Mono', fontSize: '10px' },
-    },
-    markers: { size: 0 },
-    dataLabels: { enabled: false },
-  });
-  charts[p.id].render();
-}
-
-function redraw(id) { const p = buildPorts().find(x => x.id === id); if (p) drawChart(p); }
-
-/* ── S4: PERFORMANCE TABLE ──────────────── */
-function setPeriod(p, btn) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  const now = new Date(), s = new Date(now);
-  if (p === 'today') s.setHours(0,0,0,0);
-  else if (p === 'week')  s.setDate(now.getDate() - now.getDay());
-  else if (p === 'month') s.setDate(1);
-  else if (p === 'year')  { s.setMonth(0); s.setDate(1); }
-  else if (p === 'all')   { $('d-start').value = ''; $('d-end').value = toDS(now); calcTable(); return; }
-  $('d-start').value = toDS(s);
-  $('d-end').value   = toDS(now);
-  calcTable();
-}
-
-function calcTable() {
-  const start = parsDS($('d-start').value);
-  const end   = parsDS($('d-end').value, true) || Date.now();
-  tableRows   = [];
-
-  buildPorts().forEach(p => {
-    // Filter daily_history by date range
-    const fp = p.history
-      .filter(h => h.d >= start && h.d <= end)
-      .reduce((a, h) => a + h.p, 0);
-    const fg = p.dep > 0 ? fp / p.dep * 100 : 0;
-
-    tableRows.push({
-      name:    p.id,
-      profit:  fp,
-      growth:  fg,
-      winRate: p.winRate,
-      pf:      p.pFactor === Infinity ? 999 : p.pFactor,
-      _pf:     p.pFactor,
-      dd:      p.maxDD,
-      online:  p.isOnline ? 1 : 0,
-      dep:     p.dep,
+  // ─── THEME TOGGLE ────────────────────────────────────────────
+  const themeToggle = $('#theme-toggle');
+  themeToggle.addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = state.theme;
+    themeToggle.classList.toggle('on', state.theme === 'dark');
+    // re-theme existing charts
+    Object.values(state.charts).forEach((ch) => {
+      try { ch.updateOptions({ theme: { mode: state.theme } }, false, false); } catch {}
     });
   });
 
-  renderTable();
-}
+  // ─── CURRENCY TOGGLE (USC / USD) ────────────────────────────
+  const ccyToggle = $('#ccy-toggle');
+  const lblUsc = $('#lbl-usc'), lblUsd = $('#lbl-usd');
+  function refreshCcyLabels() {
+    if (state.currency === 'USC') {
+      lblUsc.style.color = 'var(--text)';
+      lblUsd.style.color = 'var(--muted)';
+    } else {
+      lblUsc.style.color = 'var(--muted)';
+      lblUsd.style.color = 'var(--text)';
+    }
+  }
+  ccyToggle.addEventListener('click', () => {
+    state.currency = state.currency === 'USC' ? 'USD' : 'USC';
+    ccyToggle.classList.toggle('on', state.currency === 'USD');
+    refreshCcyLabels();
+    render();
+  });
+  refreshCcyLabels();
 
-function sortBy(col) {
-  document.querySelectorAll('.perf-table th').forEach(t => t.classList.remove('sort-a','sort-d'));
-  if (sortCol === col) sortDir *= -1;
-  else { sortCol = col; sortDir = -1; }
-  if (event && event.target) event.target.classList.add(sortDir === 1 ? 'sort-a' : 'sort-d');
-  renderTable();
-}
-
-function renderTable() {
-  const sorted = [...tableRows].sort((a, b) => {
-    const av = a[sortCol], bv = b[sortCol];
-    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
-    return (av - bv) * sortDir;
+  // ─── SEARCH ──────────────────────────────────────────────────
+  $('#search').addEventListener('input', (e) => {
+    state.search = e.target.value.toLowerCase().trim();
+    render();
   });
 
-  let gP = 0, gD = 0;
+  $('#refresh-btn').addEventListener('click', () => render());
 
-  $('t-body').innerHTML = sorted.map(r => {
-    gP += r.profit; gD += r.dep;
-    const pfS = r._pf === Infinity ? '∞' : r._pf.toFixed(2);
-    const ddColor = r.dd > 20 ? 'var(--r)' : r.dd > 10 ? 'var(--o)' : 'var(--g)';
+  // ─── FIREBASE LIVE SUBSCRIPTION ──────────────────────────────
+  const fbState = $('#fb-state');
+  const portsRef = ref(db, '/ports');
+  onValue(portsRef, (snap) => {
+    fbState.textContent = 'connected';
+    fbState.style.color = 'var(--profit)';
+    state.ports = snap.val() || {};
+
+    // ── EA Name Change Detection ──────────────────────────────
+    Object.entries(state.ports).forEach(([pid, p]) => {
+      const newName = (p && p.ea_name) || '—';
+      const oldName = lastEANames[pid];
+      if (oldName !== undefined && oldName !== newName) {
+        showNotification(
+          `⚠️ EA Switch: Port <strong>${pid}</strong> is now running <strong>${newName}</strong>`
+        );
+      }
+      lastEANames[pid] = newName;
+    });
+    // Clean up stale port IDs from lastEANames
+    Object.keys(lastEANames).forEach(k => { if (!(k in state.ports)) delete lastEANames[k]; });
+
+    render();
+  }, (err) => {
+    console.error('[Aura] onValue error:', err);
+    fbState.textContent = 'error';
+    fbState.style.color = 'var(--loss)';
+  });
+
+  // ─── RENDERER ────────────────────────────────────────────────
+  function render() {
+    const portsArr = Object.entries(state.ports).map(([id, p]) => ({ id, ...(p || {}) }));
+
+    // KPIs
+    const grandEq   = portsArr.reduce((s, p) => s + safe(p.equity), 0);
+    const grandBal  = portsArr.reduce((s, p) => s + safe(p.balance), 0);
+    const grandToday= portsArr.reduce((s, p) => s + safe(p.today_profit), 0);
+    const grandFlt  = portsArr.reduce((s, p) => s + safe(p.floating_profit), 0);
+    const liveCount = portsArr.filter(isLive).length;
+    const worstDd   = portsArr.reduce((m, p) => Math.max(m, safe(p.max_drawdown_pct)), 0);
+
+    const hero = $('#hero-value');
+    hero.textContent = fmtMoney(grandToday);
+    hero.classList.remove('pos','neg','neu');
+    if (grandToday > 0.0001) hero.classList.add('pos');
+    else if (grandToday < -0.0001) hero.classList.add('neg');
+    else hero.classList.add('neu');
+
+    $('#hero-ccy').textContent    = state.currency;
+    $('#hero-ports').textContent  = portsArr.length;
+    $('#hero-live').textContent   = liveCount;
+
+    $('#kpi-equity').textContent  = fmtMoney(grandEq);
+    $('#kpi-balance').textContent = fmtMoney(grandBal);
+    $('#kpi-float').textContent   = fmtMoney(grandFlt);
+    $('#kpi-float').className     = 'num text-xl mt-1 ' + colorClass(grandFlt);
+    $('#kpi-dd').textContent      = fmtPct(worstDd);
+
+    // Table
+    const body  = $('#ports-body');
+    const empty = $('#empty-state');
+    const filtered = portsArr.filter(p => {
+      if (!state.search) return true;
+      return (p.id || '').toLowerCase().includes(state.search) ||
+             (p.ea_name || '').toLowerCase().includes(state.search);
+    }).sort((a,b) => safe(b.equity) - safe(a.equity));
+
+    if (!filtered.length) {
+      body.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    body.innerHTML = filtered.map(p => rowHtml(p)).join('');
+
+    // Wire rows
+    $$('.row-main', body).forEach(row => {
+      row.addEventListener('click', () => togglePort(row.dataset.port));
+    });
+
+    // Re-open expanded accordions and render charts
+    state.expanded.forEach(pid => {
+      const panel = document.querySelector(`tr.row-acc[data-port="${CSS.escape(pid)}"]`);
+      if (panel) {
+        panel.style.display = 'table-row';
+        renderChart(pid);
+      }
+    });
+  }
+
+  function rowHtml(p) {
+    const live = isLive(p);
+    const isChanged = p.status === 'EA_CHANGED';
+    const ea = p.ea_name || '—';
+    const eaHtml = isChanged
+      ? `<span class="animate-pulse" style="color:var(--neon);font-weight:700">${ea} ⚡</span>`
+      : ea;
+    const tClass = colorClass(p.today_profit);
+    const fClass = colorClass(p.floating_profit);
+    return `
+      <tr class="row-main" data-port="${p.id}">
+        <td>
+          <span class="flex items-center gap-2">
+            <span class="dot ${live ? 'live':'idle'}"></span>
+            <span class="text-xs" style="color:var(--muted)">${live ? 'LIVE' : 'IDLE'}</span>
+          </span>
+        </td>
+        <td class="num font-semibold">${p.id}</td>
+        <td>${eaHtml}</td>
+        <td class="num text-right">${fmtMoney(p.equity)}</td>
+        <td class="num text-right">${fmtMoney(p.balance)}</td>
+        <td class="num text-right ${tClass}">${fmtMoney(p.today_profit)}</td>
+        <td class="num text-right ${fClass}">${fmtMoney(p.floating_profit)}</td>
+        <td class="num text-right">${fmtMoney(p.max_dd_usd)}</td>
+        <td class="num text-right">${fmtPct(p.max_drawdown_pct)}</td>
+      </tr>
+      <tr class="row-acc" data-port="${p.id}" style="display:none">
+        <td colspan="9" class="accordion p-0">
+          ${accordionHtml(p)}
+        </td>
+      </tr>
+    `;
+  }
+
+  function accordionHtml(p) {
+    const trades = Array.isArray(p.open_trades) ? p.open_trades : [];
+    const tradesHtml = trades.length ? trades.map(tradeRow).join('') :
+      `<tr><td colspan="7" class="text-center py-6" style="color:var(--muted)">No open trades</td></tr>`;
+
+    return `
+      <div class="grid grid-cols-1 xl:grid-cols-5 gap-4 p-5">
+        <div class="xl:col-span-3 glass p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-display text-base">Equity Curve — <span class="num" style="color:var(--neon)">${p.id}</span></h3>
+            <!-- CRITICAL: button z-index:20 above chart svg z-index:1 -->
+            <button class="copy-link-btn" data-copy="${p.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Copy Public Link
+            </button>
+          </div>
+          <div class="chart-wrap" id="chart-${cssEsc(p.id)}" style="height:280px"></div>
+        </div>
+
+        <div class="xl:col-span-2 glass p-4">
+          <h3 class="font-display text-base mb-3">Open Trades (${trades.length})</h3>
+          <div class="overflow-auto scroll-thin" style="max-height:300px">
+            <table class="w-full text-sm">
+              <thead>
+                <tr style="color:var(--muted)" class="text-[10px] uppercase tracking-widest">
+                  <th class="text-left py-2">Ticket</th>
+                  <th class="text-left">Symbol</th>
+                  <th class="text-left">Type</th>
+                  <th class="text-right">Vol</th>
+                  <th class="text-right">Open</th>
+                  <th class="text-right">Now</th>
+                  <th class="text-right">P/L</th>
+                </tr>
+              </thead>
+              <tbody>${tradesHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function tradeRow(t) {
+    const type = (t.type || '').toUpperCase();
+    const plClass = colorClass(t.profit);
+    const typeClass = type === 'BUY' ? 'pos' : 'neg';
     return `<tr>
-      <td style="color:var(--c);font-weight:700">${r.name}</td>
-      <td class="${clc(r.profit)}">${sgn(r.profit)}${fmt(r.profit)}</td>
-      <td class="${clc(r.growth)}">${pct(r.growth)}</td>
-      <td style="color:${r.winRate>=50?'var(--g)':'var(--r)'}">${r.winRate.toFixed(1)}%</td>
-      <td style="color:var(--c)">${pfS}</td>
-      <td style="color:${ddColor}">${r.dd.toFixed(2)}%</td>
-      <td>
-        <span style="font-size:9px;padding:2px 10px;border-radius:10px;
-          ${r.online
-            ? 'background:rgba(0,255,148,.10);color:var(--g)'
-            : 'background:rgba(61,80,96,.12);color:var(--t3)'}">
-          ${r.online ? 'ONLINE' : 'OFFLINE'}
-        </span>
-      </td>
+      <td class="num py-2">${safe(t.ticket,'—')}</td>
+      <td>${t.symbol || '—'}</td>
+      <td class="${typeClass} font-semibold">${type || '—'}</td>
+      <td class="num text-right">${safe(t.volume,0).toFixed(2)}</td>
+      <td class="num text-right">${safe(t.open_price,0).toFixed(5)}</td>
+      <td class="num text-right">${safe(t.current_price,0).toFixed(5)}</td>
+      <td class="num text-right ${plClass}">${fmtMoney(t.profit)}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:22px">No data</td></tr>';
+  }
 
-  const gG = gD > 0 ? gP / gD * 100 : 0;
-  const fp = $('ft-p'); fp.textContent = sgn(gP) + fmt(gP); fp.className = clc(gP);
-  const fg = $('ft-g'); fg.textContent = pct(gG);            fg.className = clc(gG);
-}
+  function cssEsc(s){ return String(s).replace(/[^a-z0-9_-]/gi,'_'); }
 
-/* ── EMERGENCY CLOSE ALL ────────────────── */
-async function doEmergency() {
-  if (!confirm('⚠️ SEND CLOSE ALL COMMAND?\n\nThis will write commands/closeall=true to Firebase.\nAll MT5 EAs monitoring this node will execute emergency stop.')) return;
-  try {
-    await window.__SET(
-      window.__REF(window.__DB, 'commands/closeall'),
-      { active: true, timestamp: Math.floor(Date.now()/1000), by: 'dashboard' }
-    );
-    toast('🚨 CLOSE ALL written to Firebase', 'var(--r)');
-  } catch(e) { toast('Error: ' + e.message, 'var(--r)'); }
-}
+  // ─── ACCORDION TOGGLE ────────────────────────────────────────
+  function togglePort(pid) {
+    const panel = document.querySelector(`tr.row-acc[data-port="${CSS.escape(pid)}"]`);
+    if (!panel) return;
+    const opening = panel.style.display === 'none';
+    panel.style.display = opening ? 'table-row' : 'none';
 
-/* ── COPY LINK ──────────────────────────── */
-function copyLink(id) {
-  const url = location.origin
-    + location.pathname.replace('index.html','public.html')
-    + '?port=' + encodeURIComponent(id);
-  navigator.clipboard.writeText(url)
-    .then(()  => toast('✓ Link copied — ' + id))
-    .catch(()  => { prompt('Copy this URL:', url); });
-}
+    if (opening) {
+      state.expanded.add(pid);
+      subscribeHistory(pid);
+      renderChart(pid);
+      const btn = panel.querySelector('[data-copy]');
+      if (btn && !btn._wired) {
+        btn._wired = true;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          copyPublicLink(pid, btn);
+        });
+      }
+    } else {
+      state.expanded.delete(pid);
+      destroyChart(pid);
+      unsubscribeHistory(pid);
+    }
+  }
 
-/* ── CLOCK ──────────────────────────────── */
-function updateClock() { if ($('hd-time')) $('hd-time').textContent = new Date().toLocaleTimeString('en-GB'); }
-setInterval(updateClock, 1000);
+  // ─── HISTORY / CHART ─────────────────────────────────────────
+  function subscribeHistory(pid) {
+    if (state.historyListeners[pid]) return;
+    const r = ref(db, `/daily_history/${pid}`);
+    const cb = onValue(r, (s) => {
+      state.history[pid] = s.val() || {};
+      if (state.expanded.has(pid)) renderChart(pid);
+    });
+    state.historyListeners[pid] = () => off(r, 'value', cb);
+  }
+  function unsubscribeHistory(pid) {
+    const un = state.historyListeners[pid];
+    if (un) { un(); delete state.historyListeners[pid]; }
+  }
 
-/* ── AUTO VELOCITY REFRESH ──────────────── */
-setInterval(() => { if (Object.keys(RAW).length) renderVelocity(buildPorts()); }, 30_000);
+  function buildSeries(pid) {
+    const h = state.history[pid] || {};
+    const points = Object.entries(h)
+      .map(([date, v]) => {
+        const ts = safe(v?.broker_midnight) ? Number(v.broker_midnight) * 1000 : Date.parse(date + 'T00:00:00Z');
+        return { x: ts, y: safe(v?.equity, null) };
+      })
+      .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+      .sort((a,b) => a.x - b.x);
+    return points;
+  }
 
-/* ── INIT DEFAULT TABLE PERIOD ──────────── */
-document.addEventListener('fb:ready', () => {
-  const now = new Date(), s = new Date(now); s.setHours(0,0,0,0);
-  $('d-start').value = toDS(s);
-  $('d-end').value   = toDS(now);
-});
+  function renderChart(pid) {
+    const el = document.getElementById(`chart-${cssEsc(pid)}`);
+    if (!el) return;
+
+    const series = buildSeries(pid);
+    const dataSeries = series.map(p => ({
+      x: p.x,
+      y: state.currency === 'USD' ? p.y / 100 : p.y,
+    }));
+
+    const opts = {
+      chart: {
+        type: 'area',
+        height: 280,
+        fontFamily: 'JetBrains Mono, monospace',
+        background: 'transparent',
+        toolbar: { show: false },
+        animations: { enabled: true, speed: 400 },
+        zoom: { enabled: false },
+      },
+      theme: { mode: state.theme },
+      colors: ['#00E5FF'],
+      stroke: { curve: 'smooth', width: 2 },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shade: state.theme,
+          type: 'vertical',
+          shadeIntensity: 0.35,
+          gradientToColors: ['#10E981'],
+          opacityFrom: 0.45,
+          opacityTo: 0.05,
+          stops: [0, 100],
+        },
+      },
+      grid: { borderColor: 'rgba(125,138,160,0.12)', strokeDashArray: 4 },
+      dataLabels: { enabled: false },
+      xaxis: {
+        type: 'datetime',
+        labels: { style: { colors: 'var(--muted)' } },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+      },
+      yaxis: {
+        labels: {
+          style: { colors: 'var(--muted)' },
+          formatter: (v) => {
+            const sym = state.currency === 'USD' ? '$' : '¢';
+            return `${sym}${Number(v).toLocaleString(undefined,{maximumFractionDigits:0})}`;
+          }
+        }
+      },
+      tooltip: {
+        theme: state.theme,
+        x: { format: 'MMM dd, yyyy' },
+        y: {
+          formatter: (v) => {
+            const sym = state.currency === 'USD' ? '$' : '¢';
+            return `${sym}${Number(v).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+          }
+        },
+      },
+      series: [{ name: 'Equity', data: dataSeries }],
+      noData: { text: 'Awaiting history…', style: { color: 'var(--muted)', fontSize: '12px' } },
+    };
+
+    if (state.charts[pid]) {
+      state.charts[pid].updateOptions(opts, true, true);
+    } else {
+      const ch = new ApexCharts(el, opts);
+      ch.render();
+      state.charts[pid] = ch;
+    }
+  }
+  function destroyChart(pid) {
+    const ch = state.charts[pid];
+    if (ch) { try { ch.destroy(); } catch {} delete state.charts[pid]; }
+  }
+
+  // ─── COPY PUBLIC LINK ───────────────────────────────────────
+  function copyPublicLink(pid, btn) {
+    const url = `${location.origin}${location.pathname}#port=${encodeURIComponent(pid)}`;
+    const done = () => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Copied';
+      btn.style.color = 'var(--profit)';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1400);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => fallback(url, done));
+    } else {
+      fallback(url, done);
+    }
+  }
+  function fallback(text, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch {}
+    document.body.removeChild(ta); cb && cb();
+  }
+
+  // ─── TOAST NOTIFICATION SYSTEM ────────────────────────────────
+  function showNotification(msgHtml) {
+    const container = $('#toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+      <span>${msgHtml}</span>
+      <button class="toast-close">&times;</button>
+    `;
+    container.appendChild(toast);
+
+    const close = () => {
+      if (!toast.parentNode) return;
+      toast.classList.add('out');
+      setTimeout(() => toast.remove(), 320);
+    };
+    toast.querySelector('.toast-close').addEventListener('click', close);
+    setTimeout(close, 5000);
+  }
+
+  // ─── DATE FILTER BUTTONS ──────────────────────────────────────
+  let activeDateRange = 'today';
+  document.querySelectorAll('.date-btn[data-range]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.date-btn[data-range]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeDateRange = btn.dataset.range;
+    });
+  });
+  document.getElementById('date-go-btn')?.addEventListener('click', () => {
+    state.dateRange = activeDateRange;
+    render();
+  });
+
+  // ─── AUTO-OPEN FROM URL HASH (#port=PORT_01) ─────────────────
+  window.addEventListener('load', () => {
+    const m = /port=([^&]+)/.exec(location.hash);
+    if (m) {
+      const pid = decodeURIComponent(m[1]);
+      const i = setInterval(() => {
+        if (document.querySelector(`tr.row-main[data-port="${CSS.escape(pid)}"]`)) {
+          clearInterval(i);
+          togglePort(pid);
+        }
+      }, 300);
+    }
+  });
+
+  // Re-render every 15s to refresh LIVE/IDLE dots
+  setInterval(() => render(), 15_000);
 </script>
 </body>
 </html>
