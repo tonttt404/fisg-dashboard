@@ -5,15 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>EA MT5 Dashboard — Aura Quant</title>
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 
-<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- ApexCharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.1/dist/apexcharts.min.js"></script>
 
 <script>
@@ -97,18 +94,13 @@
   }
   .stroke-soft { border-color: var(--stroke); }
 
-  .dot {
-    width: 8px; height: 8px; border-radius: 999px; display: inline-block;
-  }
+  .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
   .dot.live {
     background: var(--profit);
     box-shadow: 0 0 0 3px rgba(16,233,129,0.15), 0 0 12px rgba(16,233,129,0.8);
     animation: pulse 1.6s ease-in-out infinite;
   }
-  .dot.idle {
-    background: #5A6676;
-    box-shadow: 0 0 0 3px rgba(90,102,118,0.15);
-  }
+  .dot.idle { background: #5A6676; box-shadow: 0 0 0 3px rgba(90,102,118,0.15); }
   @keyframes pulse {
     0%,100% { transform: scale(1); opacity: 1; }
     50%     { transform: scale(1.25); opacity: 0.75; }
@@ -148,19 +140,19 @@
   .hero-value.neg { color: var(--loss);   text-shadow: 0 0 40px rgba(255,77,109,0.35); }
   .hero-value.neu { color: var(--text); }
 
-  /* ── Table ──────────────────────────────── */
+  /* ── Table (Strict Alignment) ────────────── */
   table.aura { width: 100%; border-collapse: separate; border-spacing: 0; }
   table.aura thead th {
     font-family: 'Inter', sans-serif; font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--muted); font-weight: 600;
-    padding: 14px 14px; text-align: left;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--stroke);
     position: sticky; top: 0; background: var(--glass-bg);
     backdrop-filter: blur(10px);
   }
   table.aura tbody td {
-    padding: 16px 14px; border-bottom: 1px solid var(--stroke);
+    padding: 16px 16px; border-bottom: 1px solid var(--stroke);
     font-size: 14px;
   }
   table.aura tbody tr.row-main { cursor: pointer; transition: background .15s; }
@@ -176,37 +168,16 @@
     border-bottom: 1px solid var(--stroke);
   }
 
-  /* ── CRITICAL Z-INDEX FIX ──────────────── */
-  .chart-wrap {
-    position: relative;
-    z-index: 1;          /* chart / SVG sit on layer 1 */
-  }
-  .chart-wrap .apexcharts-canvas,
-  .chart-wrap .apexcharts-canvas svg,
-  .chart-wrap .apexcharts-svg {
-    z-index: 1 !important;
-  }
+  .chart-wrap { position: relative; z-index: 1; }
+  .chart-wrap .apexcharts-canvas, .chart-wrap .apexcharts-canvas svg, .chart-wrap .apexcharts-svg { z-index: 1 !important; }
   .copy-link-btn {
-    position: relative;
-    z-index: 20;         /* button sits ABOVE chart SVG layers */
+    position: relative; z-index: 20;
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--glass-br);
-    background: var(--glass-bg);
-    color: var(--text);
-    font-size: 12px; font-weight: 500;
-    cursor: pointer; transition: all .15s;
+    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--glass-br);
+    background: var(--glass-bg); color: var(--text);
+    font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s;
   }
-  .copy-link-btn:hover {
-    border-color: var(--neon);
-    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
-    color: var(--neon);
-  }
-
-  .skel { background: linear-gradient(90deg, #0f1420 0%, #161d2c 50%, #0f1420 100%);
-          background-size: 200% 100%; animation: skeleton 1.4s infinite; border-radius: 8px; }
-  @keyframes skeleton { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .copy-link-btn:hover { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(0,229,255,0.08); color: var(--neon); }
 
   .scroll-thin::-webkit-scrollbar { height: 8px; width: 8px; }
   .scroll-thin::-webkit-scrollbar-thumb { background: #1d2432; border-radius: 999px; }
@@ -215,61 +186,26 @@
   .date-btn {
     padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
     font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s;
-    border: 1px solid transparent;
-    background: transparent; color: var(--muted);
+    border: 1px solid transparent; background: transparent; color: var(--muted);
     letter-spacing: 0.03em;
   }
-  .date-btn:hover:not(.active) {
-    color: var(--text); border-color: var(--glass-br);
-    background: rgba(255,255,255,0.03);
-  }
+  .date-btn:hover:not(.active) { color: var(--text); border-color: var(--glass-br); background: rgba(255,255,255,0.03); }
   .date-btn.active {
     background: var(--neon); color: #05070A;
-    box-shadow: 0 0 16px rgba(0,229,255,0.4);
-    cursor: default;
+    box-shadow: 0 0 16px rgba(0,229,255,0.4); cursor: default;
   }
   html[data-theme="light"] .date-btn.active {
-    background: #0891B2; color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(8,145,178,0.3);
+    background: #0891B2; color: #FFFFFF; box-shadow: 0 0 16px rgba(8,145,178,0.3);
   }
   .date-sep { width: 1px; height: 20px; background: var(--stroke); }
 
   /* ── Toast Notification ──────────────── */
-  .toast-container {
-    position: fixed; bottom: 24px; right: 24px; z-index: 100;
-    display: flex; flex-direction: column; gap: 10px;
-    pointer-events: none;
-  }
-  .toast {
-    pointer-events: auto;
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 20px;
-    border-radius: 14px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid var(--neon);
-    box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 24px rgba(0,229,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
-    font-size: 13px; font-weight: 500;
-    color: var(--text);
-    animation: toastBounceIn .35s cubic-bezier(0.34,1.56,0.64,1) both;
-    max-width: 420px;
-  }
-  .toast.out {
-    animation: toastFadeOut .3s ease-in both;
-  }
-  @keyframes toastBounceIn {
-    0%   { opacity: 0; transform: translateX(60px) scale(0.92); }
-    100% { opacity: 1; transform: translateX(0)   scale(1); }
-  }
-  @keyframes toastFadeOut {
-    0%   { opacity: 1; transform: translateX(0)   scale(1); }
-    100% { opacity: 0; transform: translateX(60px) scale(0.92); }
-  }
-  .toast-close {
-    background: none; border: none; color: var(--muted); cursor: pointer;
-    font-size: 16px; padding: 0; line-height: 1; transition: color .15s;
-  }
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 100; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+  .toast { pointer-events: auto; display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-radius: 14px; background: var(--glass-bg); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); border: 1px solid var(--neon); box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 24px rgba(0,229,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06); font-size: 13px; font-weight: 500; color: var(--text); animation: toastBounceIn .35s cubic-bezier(0.34,1.56,0.64,1) both; max-width: 420px; }
+  .toast.out { animation: toastFadeOut .3s ease-in both; }
+  @keyframes toastBounceIn { 0% { opacity: 0; transform: translateX(60px) scale(0.92); } 100% { opacity: 1; transform: translateX(0) scale(1); } }
+  @keyframes toastFadeOut { 0% { opacity: 1; transform: translateX(0) scale(1); } 100% { opacity: 0; transform: translateX(60px) scale(0.92); } }
+  .toast-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0; line-height: 1; transition: color .15s; }
   .toast-close:hover { color: var(--text); }
 </style>
 </head>
@@ -277,7 +213,6 @@
 
 <div class="max-w-[1440px] mx-auto px-6 py-6">
 
-  <!-- ═══════════════ HEADER ═══════════════ -->
   <header class="glass flex flex-wrap items-center justify-between gap-4 px-6 py-4 mb-6">
     <div class="flex items-center gap-4">
       <div class="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -311,11 +246,10 @@
     </div>
   </header>
 
-  <!-- ═══════════════ HERO METRIC ═══════════════ -->
   <section class="glass px-8 py-10 mb-6 overflow-hidden relative">
     <div class="flex items-start justify-between gap-6 flex-wrap">
       <div>
-        <p class="font-display uppercase tracking-[0.2em] text-xs mb-3" style="color:var(--muted)">Today Profit</p>
+        <p id="hero-profit-lbl" class="font-display uppercase tracking-[0.2em] text-xs mb-3" style="color:var(--muted)">Today Profit</p>
         <div id="hero-value" class="hero-value neu">$ 0.00</div>
         <p class="mt-4 text-sm" style="color:var(--muted)">
           <span id="hero-ccy" class="font-mono">USC</span> •
@@ -345,13 +279,11 @@
     </div>
   </section>
 
-  <!-- ═══════════════ MAIN TABLE ═══════════════ -->
   <section class="glass overflow-hidden">
     <div class="px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b stroke-soft">
       <div class="flex items-center gap-3 flex-wrap">
         <h2 class="font-display text-lg font-bold">Ports</h2>
         <div class="date-sep"></div>
-        <!-- Date Range Filter -->
         <div class="flex items-center gap-1">
           <button class="date-btn active" data-range="today">Today</button>
           <button class="date-btn" data-range="week">Week</button>
@@ -373,20 +305,19 @@
       <table class="aura min-w-[1100px]">
         <thead>
           <tr>
-            <th>STATUS</th>
-            <th>PORT ID</th>
-            <th>EA NAME</th>
+            <th class="text-left w-24">STATUS</th>
+            <th class="text-left">PORT / ACC</th>
+            <th class="text-left">EA NAME</th>
             <th class="text-right">EQUITY</th>
             <th class="text-right">BALANCE</th>
-            <th class="text-right">TODAY PROFIT</th>
+            <th class="text-right" id="th-profit-lbl">TODAY PROFIT</th>
             <th class="text-right">FLOAT</th>
             <th class="text-right">MAX DD</th>
             <th class="text-right">MAX DD%</th>
           </tr>
         </thead>
         <tbody id="ports-body">
-          <!-- populated by JS -->
-        </tbody>
+          </tbody>
       </table>
     </div>
     <div id="empty-state" class="hidden px-6 py-12 text-center" style="color:var(--muted)">
@@ -399,12 +330,8 @@
   </footer>
 </div>
 
-<!-- Toast container (fixed bottom-right, z-index:100) -->
 <div id="toast-container" class="toast-container"></div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!--  SCRIPT                                                          -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -428,16 +355,18 @@
 
   // ─── STATE ───────────────────────────────────────────────────
   const state = {
-    ports:      {},       // { portId: snapshot }
-    history:    {},       // { portId: { date: point } }
+    ports:      {},       
+    history:    {},       
+    allHistory: {},       // Global history cache for Date Filters
     theme:      'dark',
-    currency:   'USC',    // USC => raw, USD => /100
+    currency:   'USC',    
     expanded:   new Set(),
-    charts:     {},       // { portId: ApexCharts }
-    historyListeners: {}, // { portId: unsubscribe }
+    charts:     {},       
+    historyListeners: {}, 
     search:     '',
+    dateRange:  'today',  // Date filter state
   };
-  const lastEANames = {}; // { portId: 'ea_name' } — tracked for change detection
+  const lastEANames = {}; 
 
   // ─── UTILS ───────────────────────────────────────────────────
   const $ = (s, r = document) => r.querySelector(s);
@@ -467,6 +396,37 @@
     return t && (Date.now() - t < 60_000);
   }
 
+  // ─── DYNAMIC PROFIT CALCULATOR ───────────────────────────────
+  // คำนวณกำไรตามช่วงเวลา (ใช้ข้อมูล Equity ปัจจุบัน หักลบกับ Equity ในอดีต)
+  function getRangeProfit(p, range) {
+    if (range === 'today') return safe(p.today_profit);
+    if (range === 'all') return safe(p.equity) - safe(p.net_deposit);
+
+    const hist = state.allHistory[p.id] || {};
+    const points = Object.values(hist).sort((a,b) => b.broker_midnight - a.broker_midnight);
+    
+    // ถ้าไม่มีประวัติย้อนหลัง ให้แสดงค่า Today เป็น Default
+    if (points.length === 0) return safe(p.today_profit);
+
+    const now = Date.now() / 1000;
+    let days = 7;
+    if (range === 'month') days = 30;
+    if (range === 'year') days = 365;
+
+    const cutoff = now - (days * 24 * 60 * 60);
+    
+    // หายอด Equity ในอดีต (จุดที่เก่าที่สุดที่ไม่เกิน cutoff)
+    let pastEquity = safe(p.equity) - safe(p.today_profit); 
+    for(let pt of points) {
+      if (pt.broker_midnight <= cutoff) {
+         pastEquity = pt.equity;
+         break;
+      }
+      pastEquity = pt.equity;
+    }
+    return safe(p.equity) - pastEquity;
+  }
+
   // ─── CLOCK ───────────────────────────────────────────────────
   setInterval(() => {
     const d = new Date();
@@ -482,13 +442,12 @@
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = state.theme;
     themeToggle.classList.toggle('on', state.theme === 'dark');
-    // re-theme existing charts
     Object.values(state.charts).forEach((ch) => {
       try { ch.updateOptions({ theme: { mode: state.theme } }, false, false); } catch {}
     });
   });
 
-  // ─── CURRENCY TOGGLE (USC / USD) ────────────────────────────
+  // ─── CURRENCY TOGGLE ─────────────────────────────────────────
   const ccyToggle = $('#ccy-toggle');
   const lblUsc = $('#lbl-usc'), lblUsd = $('#lbl-usd');
   function refreshCcyLabels() {
@@ -508,34 +467,51 @@
   });
   refreshCcyLabels();
 
-  // ─── SEARCH ──────────────────────────────────────────────────
+  // ─── SEARCH & BUTTONS ────────────────────────────────────────
   $('#search').addEventListener('input', (e) => {
     state.search = e.target.value.toLowerCase().trim();
     render();
   });
-
   $('#refresh-btn').addEventListener('click', () => render());
 
-  // ─── FIREBASE LIVE SUBSCRIPTION ──────────────────────────────
+  let activeDateRange = 'today';
+  document.querySelectorAll('.date-btn[data-range]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.date-btn[data-range]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeDateRange = btn.dataset.range;
+    });
+  });
+  $('#date-go-btn')?.addEventListener('click', () => {
+    state.dateRange = activeDateRange;
+    render();
+  });
+
+  // ─── FIREBASE LIVE SUBSCRIPTIONS ─────────────────────────────
   const fbState = $('#fb-state');
+  
+  // 1. Subscribe to Global History (For Date Filters)
+  const historyRef = ref(db, '/daily_history');
+  onValue(historyRef, (snap) => {
+    state.allHistory = snap.val() || {};
+    render();
+  });
+
+  // 2. Subscribe to Live Ports
   const portsRef = ref(db, '/ports');
   onValue(portsRef, (snap) => {
     fbState.textContent = 'connected';
     fbState.style.color = 'var(--profit)';
     state.ports = snap.val() || {};
 
-    // ── EA Name Change Detection ──────────────────────────────
     Object.entries(state.ports).forEach(([pid, p]) => {
       const newName = (p && p.ea_name) || '—';
       const oldName = lastEANames[pid];
       if (oldName !== undefined && oldName !== newName) {
-        showNotification(
-          `⚠️ EA Switch: Port <strong>${pid}</strong> is now running <strong>${newName}</strong>`
-        );
+        showNotification(`⚠️ EA Switch: Port <strong>${pid}</strong> is now running <strong>${newName}</strong>`);
       }
       lastEANames[pid] = newName;
     });
-    // Clean up stale port IDs from lastEANames
     Object.keys(lastEANames).forEach(k => { if (!(k in state.ports)) delete lastEANames[k]; });
 
     render();
@@ -549,38 +525,47 @@
   function render() {
     const portsArr = Object.entries(state.ports).map(([id, p]) => ({ id, ...(p || {}) }));
 
-    // KPIs
+    // คำนวณ KPI โดยใช้ระบบ Date Filter
     const grandEq   = portsArr.reduce((s, p) => s + safe(p.equity), 0);
     const grandBal  = portsArr.reduce((s, p) => s + safe(p.balance), 0);
-    const grandToday= portsArr.reduce((s, p) => s + safe(p.today_profit), 0);
     const grandFlt  = portsArr.reduce((s, p) => s + safe(p.floating_profit), 0);
     const liveCount = portsArr.filter(isLive).length;
     const worstDd   = portsArr.reduce((m, p) => Math.max(m, safe(p.max_drawdown_pct)), 0);
+    
+    // คำนวณ Profit รวมตามช่วงเวลาที่กดเลือก (Today, Week, Month, etc.)
+    const grandRangeProfit = portsArr.reduce((s, p) => s + getRangeProfit(p, state.dateRange), 0);
 
+    // อัปเดตข้อความ Header
+    const rangeLabels = { 'today':'Today Profit', 'week':'7-Day Profit', 'month':'30-Day Profit', 'year':'1-Year Profit', 'all':'All Time Profit' };
+    const currentLabel = rangeLabels[state.dateRange] || 'Profit';
+    $('#hero-profit-lbl').textContent = currentLabel;
+    $('#th-profit-lbl').textContent = currentLabel.toUpperCase();
+
+    // อัปเดตตัวเลขใหญ่
     const hero = $('#hero-value');
-    hero.textContent = fmtMoney(grandToday);
+    hero.textContent = fmtMoney(grandRangeProfit);
     hero.classList.remove('pos','neg','neu');
-    if (grandToday > 0.0001) hero.classList.add('pos');
-    else if (grandToday < -0.0001) hero.classList.add('neg');
+    if (grandRangeProfit > 0.0001) hero.classList.add('pos');
+    else if (grandRangeProfit < -0.0001) hero.classList.add('neg');
     else hero.classList.add('neu');
 
     $('#hero-ccy').textContent    = state.currency;
     $('#hero-ports').textContent  = portsArr.length;
     $('#hero-live').textContent   = liveCount;
-
     $('#kpi-equity').textContent  = fmtMoney(grandEq);
     $('#kpi-balance').textContent = fmtMoney(grandBal);
     $('#kpi-float').textContent   = fmtMoney(grandFlt);
     $('#kpi-float').className     = 'num text-xl mt-1 ' + colorClass(grandFlt);
     $('#kpi-dd').textContent      = fmtPct(worstDd);
 
-    // Table
+    // Render Table
     const body  = $('#ports-body');
     const empty = $('#empty-state');
     const filtered = portsArr.filter(p => {
       if (!state.search) return true;
       return (p.id || '').toLowerCase().includes(state.search) ||
-             (p.ea_name || '').toLowerCase().includes(state.search);
+             (p.ea_name || '').toLowerCase().includes(state.search) ||
+             (String(p.account_login)).includes(state.search);
     }).sort((a,b) => safe(b.equity) - safe(a.equity));
 
     if (!filtered.length) {
@@ -592,12 +577,10 @@
 
     body.innerHTML = filtered.map(p => rowHtml(p)).join('');
 
-    // Wire rows
     $$('.row-main', body).forEach(row => {
       row.addEventListener('click', () => togglePort(row.dataset.port));
     });
 
-    // Re-open expanded accordions and render charts
     state.expanded.forEach(pid => {
       const panel = document.querySelector(`tr.row-acc[data-port="${CSS.escape(pid)}"]`);
       if (panel) {
@@ -614,21 +597,30 @@
     const eaHtml = isChanged
       ? `<span class="animate-pulse" style="color:var(--neon);font-weight:700">${ea} ⚡</span>`
       : ea;
-    const tClass = colorClass(p.today_profit);
+    
+    // ใช้ getRangeProfit ดึงยอดตาม Timeframe ที่เลือก
+    const rangeProfit = getRangeProfit(p, state.dateRange);
+    const tClass = colorClass(rangeProfit);
     const fClass = colorClass(p.floating_profit);
+    
     return `
       <tr class="row-main" data-port="${p.id}">
-        <td>
+        <td class="text-left">
           <span class="flex items-center gap-2">
             <span class="dot ${live ? 'live':'idle'}"></span>
             <span class="text-xs" style="color:var(--muted)">${live ? 'LIVE' : 'IDLE'}</span>
           </span>
         </td>
-        <td class="num font-semibold">${p.id}</td>
-        <td>${eaHtml}</td>
+        <td class="text-left">
+          <div class="flex flex-col">
+            <span class="num font-semibold text-[15px]">${p.id}</span>
+            <span class="num text-[11px] tracking-wider" style="color:var(--neon)">#${p.account_login || '---'}</span>
+          </div>
+        </td>
+        <td class="text-left">${eaHtml}</td>
         <td class="num text-right">${fmtMoney(p.equity)}</td>
         <td class="num text-right">${fmtMoney(p.balance)}</td>
-        <td class="num text-right ${tClass}">${fmtMoney(p.today_profit)}</td>
+        <td class="num text-right ${tClass} font-semibold">${fmtMoney(rangeProfit)}</td>
         <td class="num text-right ${fClass}">${fmtMoney(p.floating_profit)}</td>
         <td class="num text-right">${fmtMoney(p.max_dd_usd)}</td>
         <td class="num text-right">${fmtPct(p.max_drawdown_pct)}</td>
@@ -651,7 +643,6 @@
         <div class="xl:col-span-3 glass p-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-display text-base">Equity Curve — <span class="num" style="color:var(--neon)">${p.id}</span></h3>
-            <!-- CRITICAL: button z-index:20 above chart svg z-index:1 -->
             <button class="copy-link-btn" data-copy="${p.id}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               Copy Public Link
@@ -688,9 +679,9 @@
     const plClass = colorClass(t.profit);
     const typeClass = type === 'BUY' ? 'pos' : 'neg';
     return `<tr>
-      <td class="num py-2">${safe(t.ticket,'—')}</td>
-      <td>${t.symbol || '—'}</td>
-      <td class="${typeClass} font-semibold">${type || '—'}</td>
+      <td class="num py-2 text-left">${safe(t.ticket,'—')}</td>
+      <td class="text-left">${t.symbol || '—'}</td>
+      <td class="${typeClass} font-semibold text-left">${type || '—'}</td>
       <td class="num text-right">${safe(t.volume,0).toFixed(2)}</td>
       <td class="num text-right">${safe(t.open_price,0).toFixed(5)}</td>
       <td class="num text-right">${safe(t.current_price,0).toFixed(5)}</td>
@@ -700,7 +691,6 @@
 
   function cssEsc(s){ return String(s).replace(/[^a-z0-9_-]/gi,'_'); }
 
-  // ─── ACCORDION TOGGLE ────────────────────────────────────────
   function togglePort(pid) {
     const panel = document.querySelector(`tr.row-acc[data-port="${CSS.escape(pid)}"]`);
     if (!panel) return;
@@ -726,7 +716,6 @@
     }
   }
 
-  // ─── HISTORY / CHART ─────────────────────────────────────────
   function subscribeHistory(pid) {
     if (state.historyListeners[pid]) return;
     const r = ref(db, `/daily_history/${pid}`);
@@ -764,75 +753,25 @@
     }));
 
     const opts = {
-      chart: {
-        type: 'area',
-        height: 280,
-        fontFamily: 'JetBrains Mono, monospace',
-        background: 'transparent',
-        toolbar: { show: false },
-        animations: { enabled: true, speed: 400 },
-        zoom: { enabled: false },
-      },
-      theme: { mode: state.theme },
-      colors: ['#00E5FF'],
-      stroke: { curve: 'smooth', width: 2 },
-      fill: {
-        type: 'gradient',
-        gradient: {
-          shade: state.theme,
-          type: 'vertical',
-          shadeIntensity: 0.35,
-          gradientToColors: ['#10E981'],
-          opacityFrom: 0.45,
-          opacityTo: 0.05,
-          stops: [0, 100],
-        },
-      },
-      grid: { borderColor: 'rgba(125,138,160,0.12)', strokeDashArray: 4 },
-      dataLabels: { enabled: false },
-      xaxis: {
-        type: 'datetime',
-        labels: { style: { colors: 'var(--muted)' } },
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-      },
-      yaxis: {
-        labels: {
-          style: { colors: 'var(--muted)' },
-          formatter: (v) => {
-            const sym = state.currency === 'USD' ? '$' : '¢';
-            return `${sym}${Number(v).toLocaleString(undefined,{maximumFractionDigits:0})}`;
-          }
-        }
-      },
-      tooltip: {
-        theme: state.theme,
-        x: { format: 'MMM dd, yyyy' },
-        y: {
-          formatter: (v) => {
-            const sym = state.currency === 'USD' ? '$' : '¢';
-            return `${sym}${Number(v).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}`;
-          }
-        },
-      },
+      chart: { type: 'area', height: 280, fontFamily: 'JetBrains Mono, monospace', background: 'transparent', toolbar: { show: false }, animations: { enabled: true, speed: 400 }, zoom: { enabled: false } },
+      theme: { mode: state.theme }, colors: ['#00E5FF'], stroke: { curve: 'smooth', width: 2 },
+      fill: { type: 'gradient', gradient: { shade: state.theme, type: 'vertical', shadeIntensity: 0.35, gradientToColors: ['#10E981'], opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 100] } },
+      grid: { borderColor: 'rgba(125,138,160,0.12)', strokeDashArray: 4 }, dataLabels: { enabled: false },
+      xaxis: { type: 'datetime', labels: { style: { colors: 'var(--muted)' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+      yaxis: { labels: { style: { colors: 'var(--muted)' }, formatter: (v) => { const sym = state.currency === 'USD' ? '$' : '¢'; return `${sym}${Number(v).toLocaleString(undefined,{maximumFractionDigits:0})}`; } } },
+      tooltip: { theme: state.theme, x: { format: 'MMM dd, yyyy' }, y: { formatter: (v) => { const sym = state.currency === 'USD' ? '$' : '¢'; return `${sym}${Number(v).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}`; } } },
       series: [{ name: 'Equity', data: dataSeries }],
       noData: { text: 'Awaiting history…', style: { color: 'var(--muted)', fontSize: '12px' } },
     };
 
-    if (state.charts[pid]) {
-      state.charts[pid].updateOptions(opts, true, true);
-    } else {
-      const ch = new ApexCharts(el, opts);
-      ch.render();
-      state.charts[pid] = ch;
-    }
+    if (state.charts[pid]) { state.charts[pid].updateOptions(opts, true, true); }
+    else { const ch = new ApexCharts(el, opts); ch.render(); state.charts[pid] = ch; }
   }
   function destroyChart(pid) {
     const ch = state.charts[pid];
     if (ch) { try { ch.destroy(); } catch {} delete state.charts[pid]; }
   }
 
-  // ─── COPY PUBLIC LINK ───────────────────────────────────────
   function copyPublicLink(pid, btn) {
     const url = `${location.origin}${location.pathname}#port=${encodeURIComponent(pid)}`;
     const done = () => {
@@ -841,11 +780,8 @@
       btn.style.color = 'var(--profit)';
       setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1400);
     };
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(done).catch(() => fallback(url, done));
-    } else {
-      fallback(url, done);
-    }
+    if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(url).then(done).catch(() => fallback(url, done)); }
+    else { fallback(url, done); }
   }
   function fallback(text, cb) {
     const ta = document.createElement('textarea');
@@ -854,55 +790,27 @@
     document.body.removeChild(ta); cb && cb();
   }
 
-  // ─── TOAST NOTIFICATION SYSTEM ────────────────────────────────
   function showNotification(msgHtml) {
     const container = $('#toast-container');
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `
-      <span>${msgHtml}</span>
-      <button class="toast-close">&times;</button>
-    `;
+    toast.innerHTML = `<span>${msgHtml}</span><button class="toast-close">&times;</button>`;
     container.appendChild(toast);
-
-    const close = () => {
-      if (!toast.parentNode) return;
-      toast.classList.add('out');
-      setTimeout(() => toast.remove(), 320);
-    };
+    const close = () => { if (!toast.parentNode) return; toast.classList.add('out'); setTimeout(() => toast.remove(), 320); };
     toast.querySelector('.toast-close').addEventListener('click', close);
     setTimeout(close, 5000);
   }
 
-  // ─── DATE FILTER BUTTONS ──────────────────────────────────────
-  let activeDateRange = 'today';
-  document.querySelectorAll('.date-btn[data-range]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.date-btn[data-range]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeDateRange = btn.dataset.range;
-    });
-  });
-  document.getElementById('date-go-btn')?.addEventListener('click', () => {
-    state.dateRange = activeDateRange;
-    render();
-  });
-
-  // ─── AUTO-OPEN FROM URL HASH (#port=PORT_01) ─────────────────
   window.addEventListener('load', () => {
     const m = /port=([^&]+)/.exec(location.hash);
     if (m) {
       const pid = decodeURIComponent(m[1]);
       const i = setInterval(() => {
-        if (document.querySelector(`tr.row-main[data-port="${CSS.escape(pid)}"]`)) {
-          clearInterval(i);
-          togglePort(pid);
-        }
+        if (document.querySelector(`tr.row-main[data-port="${CSS.escape(pid)}"]`)) { clearInterval(i); togglePort(pid); }
       }, 300);
     }
   });
 
-  // Re-render every 15s to refresh LIVE/IDLE dots
   setInterval(() => render(), 15_000);
 </script>
 </body>
